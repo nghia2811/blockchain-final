@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Multisig Wallet - DeFi Asset Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>Group Multisig Wallet</h1>
+                <span class="subtitle">Decentralized Fund Management with Yield Farming</span>
+            </div>
+            <div class="wallet-info">
+                <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
+                <div id="accountInfo" class="account-info hidden">
+                    <span id="accountAddress"></span>
+                    <span id="accountRole" class="badge"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section class="dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Wallet Balance</h3>
+                        <p id="walletBalance" class="stat-value">0 ETH</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Aave Balance</h3>
+                        <p id="aaveBalance" class="stat-value">0 ETH</p>
+                        <span id="interestEarned" class="interest">+0 ETH interest</span>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Proposals</h3>
+                        <p id="pendingCount" class="stat-value">0</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Threshold</h3>
+                        <p id="thresholdInfo" class="stat-value">0/0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin List -->
+            <section class="admins-section">
+                <h2>Wallet Admins</h2>
+                <div id="adminsList" class="admins-list">
+                    <!-- Admins will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="proposals">Proposals</button>
+                <button class="tab-btn" data-tab="create">Create Proposal</button>
+                <button class="tab-btn" data-tab="savings">Savings (Aave)</button>
+                <button class="tab-btn" data-tab="history">History</button>
+            </div>
+
+            <!-- Tab Content: Proposals -->
+            <section id="proposals" class="tab-content active">
+                <h2>Pending Proposals</h2>
+                <div id="proposalsList" class="proposals-list">
+                    <p class="empty-state">No pending proposals</p>
+                </div>
+            </section>
+
+            <!-- Tab Content: Create Proposal -->
+            <section id="create" class="tab-content">
+                <h2>Create New Proposal</h2>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label>Proposal Type</label>
+                        <select id="proposalType">
+                            <option value="transfer">Transfer ETH</option>
+                            <option value="aaveDeposit">Deposit to Aave</option>
+                            <option value="aaveWithdraw">Withdraw from Aave</option>
+                        </select>
+                    </div>
+
+                    <div id="transferFields">
+                        <div class="form-group">
+                            <label>Recipient Address</label>
+                            <input type="text" id="recipient" placeholder="0x...">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Amount (ETH)</label>
+                        <input type="number" id="amount" placeholder="0.0" step="0.001">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="description" placeholder="Describe the purpose of this proposal..."></textarea>
+                    </div>
+
+                    <button id="createProposalBtn" class="btn btn-primary">Create Proposal</button>
+                </div>
+            </section>
+
+            <!-- Tab Content: Savings -->
+            <section id="savings" class="tab-content">
+                <h2>Aave Savings</h2>
+                <div class="savings-grid">
+                    <div class="savings-card">
+                        <h3>Current Deposit</h3>
+                        <p id="currentDeposit" class="large-value">0 ETH</p>
+                        <p id="currentInterest" class="interest-earned">Interest: +0 ETH</p>
+                    </div>
+                    <div class="savings-card">
+                        <h3>Quick Actions</h3>
+                        <p class="note">Note: These actions require multisig approval</p>
+                        <div class="action-buttons">
+                            <button id="quickDepositBtn" class="btn btn-secondary">Propose Deposit</button>
+                            <button id="quickWithdrawBtn" class="btn btn-warning">Propose Withdraw</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="aave-info">
+                    <h3>How it works</h3>
+                    <p>Your idle funds can be deposited into Aave Protocol to earn yield. All deposits and withdrawals require multisig approval for security.</p>
+                </div>
+            </section>
+
+            <!-- Tab Content: History -->
+            <section id="history" class="tab-content">
+                <h2>Transaction History</h2>
+                <div id="historyList" class="history-list">
+                    <p class="empty-state">No transaction history</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
