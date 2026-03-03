@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException
 
-from models.strategy import StrategyRecommendation, OpportunitiesResponse
+from models.strategy import (
+    StrategyRecommendation,
+    OpportunitiesResponse,
+    PairScanResponse,
+)
 from services.strategy_engine import StrategyEngine
 
 router = APIRouter(prefix="/api/strategies", tags=["strategies"])
@@ -28,8 +32,22 @@ def get_lending():
 
 @router.get("/arbitrage", response_model=list[StrategyRecommendation])
 def get_arbitrage():
-    """Return arbitrage strategy recommendations."""
+    """Return arbitrage strategy recommendations (above spread threshold only)."""
     try:
         return _engine.get_arbitrage_opportunities()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.get("/scan", response_model=PairScanResponse)
+def scan_pairs():
+    """
+    Raw scan of ALL configured token pairs.
+    Returns spread data for every pair regardless of threshold,
+    sorted by absolute spread descending.
+    Useful for debugging and monitoring which pairs are closest to threshold.
+    """
+    try:
+        return _engine.scan_all_pairs()
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))

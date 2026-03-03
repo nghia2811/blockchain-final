@@ -15,8 +15,29 @@ class PriceSnapshot(BaseModel):
     eth_usd: float
     btc_usd: float
     eth_btc_ratio: float
-    updated_at: int        # unix timestamp of Chainlink answer
+    updated_at: int                    # unix timestamp of Chainlink answer
     is_fresh: bool
+    token_prices: dict[str, float] = {}  # symbol → USD price for all scanned tokens
+
+
+class PairScanResult(BaseModel):
+    """Raw scan result for a single token pair — returned by /api/strategies/scan."""
+    token0_symbol: str
+    token1_symbol: str
+    pool_address: str
+    fee_tier: int
+    chainlink_ratio: float             # token0_usd / token1_usd (expected DEX price)
+    dex_ratio: float                   # actual DEX price (token1 per token0)
+    spread_pct: float                  # (chainlink - dex) / chainlink * 100
+    spread_direction: str              # e.g. "Sell WETH→USDC" or "Sell USDC→WETH"
+    above_threshold: bool
+    error: Optional[str] = None        # set if the scan for this pair failed
+
+
+class PairScanResponse(BaseModel):
+    pairs: list[PairScanResult]
+    best_spread_pct: float             # abs spread of the most attractive pair
+    generated_at: int
 
 
 class StrategyRecommendation(BaseModel):

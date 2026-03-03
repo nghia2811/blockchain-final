@@ -41,6 +41,7 @@ def root():
             "strategies":  "/api/strategies/opportunities",
             "lending":     "/api/strategies/lending",
             "arbitrage":   "/api/strategies/arbitrage",
+            "scan":        "/api/strategies/scan",
             "calldata":    "/api/calldata/encode  [POST]",
         },
     }
