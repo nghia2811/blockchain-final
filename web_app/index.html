@@ -5,6 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Group Multisig Wallet - DeFi Asset Manager</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ---- Strategy tab additions ---- */
+        .price-ticker {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: flex-end;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        .price-ticker .price-item { display: flex; gap: 0.4rem; align-items: center; }
+        .price-ticker .price-value { font-weight: 600; color: #e2e8f0; }
+        .price-ticker .price-stale { color: #f59e0b; }
+
+        .strategy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; }
+
+        .strategy-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.2rem 1.4rem;
+        }
+        .strategy-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.7rem; }
+        .strategy-card-header h3 { margin: 0; font-size: 1rem; color: #e2e8f0; }
+        .strategy-type-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .strategy-type-badge.lending   { background: #1d4ed8; color: #bfdbfe; }
+        .strategy-type-badge.arbitrage { background: #7c3aed; color: #ddd6fe; }
+
+        .strategy-metrics { display: flex; gap: 1.5rem; margin-bottom: 0.8rem; }
+        .strategy-metric label { font-size: 0.72rem; color: #64748b; display: block; margin-bottom: 2px; }
+        .strategy-metric .value { font-size: 1.1rem; font-weight: 700; color: #38bdf8; }
+        .risk-1,.risk-2  { color: #4ade80; }
+        .risk-3,.risk-4  { color: #a3e635; }
+        .risk-5,.risk-6  { color: #facc15; }
+        .risk-7,.risk-8  { color: #fb923c; }
+        .risk-9,.risk-10 { color: #f87171; }
+
+        .strategy-desc { font-size: 0.82rem; color: #94a3b8; margin-bottom: 1rem; line-height: 1.4; }
+
+        .strategy-footer { display: flex; justify-content: space-between; align-items: center; }
+        .strategy-expires { font-size: 0.72rem; color: #475569; }
+        .strategy-expired { color: #f87171; }
+
+        .strategy-empty { text-align: center; color: #64748b; padding: 3rem 0; }
+
+        .strategies-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+        .strategies-header h2 { margin: 0; }
+        .btn-refresh { font-size: 0.8rem; }
+
+        /* Proposal type badges */
+        .proposal-type.transfer  { background: #1e3a5f; color: #90cdf4; }
+        .proposal-type.strategy  { background: #3b0764; color: #e9d5ff; }
+        .proposal-type.lending   { background: #1d3d6e; color: #bfdbfe; }
+        .proposal-type.arbitrage { background: #4c1d95; color: #ddd6fe; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -12,9 +74,19 @@
         <header class="header">
             <div class="logo">
                 <h1>Group Multisig Wallet</h1>
-                <span class="subtitle">Decentralized Fund Management with Yield Farming</span>
+                <span class="subtitle">Decentralized Fund Management with AI Strategy Engine</span>
             </div>
             <div class="wallet-info">
+                <!-- Live price ticker -->
+                <div class="price-ticker" id="priceTicker">
+                    <span class="price-item">
+                        ETH/USD <span class="price-value" id="tickerEthUsd">–</span>
+                    </span>
+                    <span class="price-item">
+                        BTC/USD <span class="price-value" id="tickerBtcUsd">–</span>
+                    </span>
+                    <span class="price-item" id="tickerFreshness" style="display:none;"></span>
+                </div>
                 <button id="connectBtn" class="btn btn-primary">Connect Wallet</button>
                 <div id="accountInfo" class="account-info hidden">
                     <span id="accountAddress"></span>
@@ -33,9 +105,9 @@
                         <p id="walletBalance" class="stat-value">0 ETH</p>
                     </div>
                     <div class="stat-card">
-                        <h3>Aave Balance</h3>
-                        <p id="aaveBalance" class="stat-value">0 ETH</p>
-                        <span id="interestEarned" class="interest">+0 ETH interest</span>
+                        <h3>ETH Price</h3>
+                        <p id="dashEthPrice" class="stat-value">–</p>
+                        <span id="dashEthBtcRatio" class="interest">ETH/BTC –</span>
                     </div>
                     <div class="stat-card">
                         <h3>Pending Proposals</h3>
@@ -51,16 +123,14 @@
             <!-- Admin List -->
             <section class="admins-section">
                 <h2>Wallet Admins</h2>
-                <div id="adminsList" class="admins-list">
-                    <!-- Admins will be loaded here -->
-                </div>
+                <div id="adminsList" class="admins-list"></div>
             </section>
 
             <!-- Tabs -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="proposals">Proposals</button>
                 <button class="tab-btn" data-tab="create">Create Proposal</button>
-                <button class="tab-btn" data-tab="savings">Savings (Aave)</button>
+                <button class="tab-btn" data-tab="strategies">Investment Strategies</button>
                 <button class="tab-btn" data-tab="history">History</button>
             </div>
 
@@ -80,11 +150,12 @@
                         <label>Proposal Type</label>
                         <select id="proposalType">
                             <option value="transfer">Transfer ETH</option>
-                            <option value="aaveDeposit">Deposit to Aave</option>
-                            <option value="aaveWithdraw">Withdraw from Aave</option>
+                            <option value="lending">Strategy: Lending</option>
+                            <option value="arbitrage">Strategy: Arbitrage</option>
                         </select>
                     </div>
 
+                    <!-- Transfer fields -->
                     <div id="transferFields">
                         <div class="form-group">
                             <label>Recipient Address</label>
@@ -92,7 +163,27 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
+                    <!-- Strategy fields (pre-filled from backend recommendation) -->
+                    <div id="strategyFields" style="display:none;">
+                        <div class="form-group">
+                            <label>Protocol Address</label>
+                            <input type="text" id="strategyProtocol" placeholder="0x...">
+                        </div>
+                        <div class="form-group">
+                            <label>Token In Address <small>(address(0) for ETH)</small></label>
+                            <input type="text" id="strategyTokenIn" placeholder="0x...">
+                        </div>
+                        <div class="form-group">
+                            <label>Amount In (wei)</label>
+                            <input type="text" id="strategyAmountIn" placeholder="1000000000000000000">
+                        </div>
+                        <div class="form-group">
+                            <label>Calldata (hex)</label>
+                            <textarea id="strategyCalldata" placeholder="0x..." rows="3" style="font-family:monospace;font-size:0.8rem;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="amountGroup">
                         <label>Amount (ETH)</label>
                         <input type="number" id="amount" placeholder="0.0" step="0.001">
                     </div>
@@ -106,27 +197,25 @@
                 </div>
             </section>
 
-            <!-- Tab Content: Savings -->
-            <section id="savings" class="tab-content">
-                <h2>Aave Savings</h2>
-                <div class="savings-grid">
-                    <div class="savings-card">
-                        <h3>Current Deposit</h3>
-                        <p id="currentDeposit" class="large-value">0 ETH</p>
-                        <p id="currentInterest" class="interest-earned">Interest: +0 ETH</p>
-                    </div>
-                    <div class="savings-card">
-                        <h3>Quick Actions</h3>
-                        <p class="note">Note: These actions require multisig approval</p>
-                        <div class="action-buttons">
-                            <button id="quickDepositBtn" class="btn btn-secondary">Propose Deposit</button>
-                            <button id="quickWithdrawBtn" class="btn btn-warning">Propose Withdraw</button>
-                        </div>
-                    </div>
+            <!-- Tab Content: Investment Strategies -->
+            <section id="strategies" class="tab-content">
+                <div class="strategies-header">
+                    <h2>Investment Strategies</h2>
+                    <button id="refreshStrategiesBtn" class="btn btn-secondary btn-refresh">Refresh</button>
                 </div>
-                <div class="aave-info">
-                    <h3>How it works</h3>
-                    <p>Your idle funds can be deposited into Aave Protocol to earn yield. All deposits and withdrawals require multisig approval for security.</p>
+                <p style="color:#64748b;font-size:0.85rem;margin-bottom:1.2rem;">
+                    Opportunities generated by the backend strategy engine based on
+                    live Chainlink price feeds and on-chain lending rates.
+                </p>
+
+                <h3 style="color:#94a3b8;font-size:0.9rem;margin-bottom:0.6rem;">LENDING</h3>
+                <div id="lendingStrategies" class="strategy-grid">
+                    <p class="strategy-empty">Loading...</p>
+                </div>
+
+                <h3 style="color:#94a3b8;font-size:0.9rem;margin-top:1.5rem;margin-bottom:0.6rem;">ARBITRAGE</h3>
+                <div id="arbitrageStrategies" class="strategy-grid">
+                    <p class="strategy-empty">Loading...</p>
                 </div>
             </section>
 

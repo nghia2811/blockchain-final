@@ -13,7 +13,7 @@ library AaveAddresses {
     address constant MAINNET_WETH_GATEWAY = 0x893411580e590D62dDBca8a703d61Cc4A8c7b2b9;
     address constant MAINNET_USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant MAINNET_USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
-    address constant MAINNET_DAI = 0x6B175474E89094C44Da98b954EescdeCB5AC5fea;
+    address constant MAINNET_DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant MAINNET_AWETH = 0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8;
 
     // Sepolia Testnet Addresses

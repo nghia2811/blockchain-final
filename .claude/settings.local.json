@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -L https://foundry.paradigm.xyz)",
+      "Bash(bash)",
+      "Bash(export PATH=\"$PATH:/c/Users/VCB/.foundry/bin\")",
+      "Bash(foundryup)",
+      "Bash(forge --version)",
+      "Bash(cast --version)",
+      "Bash(anvil --version)",
+      "Bash(forge install foundry-rs/forge-std --no-commit)",
+      "Bash(forge install foundry-rs/forge-std)",
+      "Bash(forge install aave/aave-v3-core)",
+      "Bash(forge install OpenZeppelin/openzeppelin-contracts)",
+      "Bash(forge build)",
+      "Bash(forge test -vv)",
+      "Bash(forge test --match-test test_MultipleProposalsWorkflow -vvvv)",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \":*)",
+      "Bash(cmd /c \"cd d:\\\\nghiant1\\\\blockchain-final && forge build 2>&1\")",
+      "Bash(cmd /c \"cd d:\\\\nghiant1\\\\blockchain-final && forge build\")",
+      "Bash(powershell -Command \"cd d:\\\\nghiant1\\\\blockchain-final; forge build 2>&1\")",
+      "Bash(powershell -Command \"Get-Command forge -ErrorAction SilentlyContinue; Get-ChildItem ~\\\\.foundry\\\\bin\\\\ 2>$null; Get-ChildItem $env:USERPROFILE\\\\.foundry\\\\bin\\\\ 2>$null\")",
+      "Bash(powershell -NoProfile -Command \"& { ls C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\ }\")",
+      "Bash(powershell -NoProfile -Command \"& { cd d:\\\\nghiant1\\\\blockchain-final; C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\forge.exe build 2>&1 }\")",
+      "Bash(powershell -NoProfile -Command \"& { cd d:\\\\nghiant1\\\\blockchain-final; C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\forge.exe test --match-contract MultisigWalletWithStrategiesTest -v 2>&1 }\")"
+    ]
+  }
+}
