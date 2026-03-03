@@ -130,26 +130,14 @@ For each pair in ARBITRAGE_PAIRS:
 ```
 blockchain-final/
 ├── src/                                    # Smart contracts
-│   ├── MultisigWallet.sol                  # Base multisig (transfer only)
 │   ├── MultisigWalletWithStrategies.sol    # Main contract
-│   ├── MultisigWalletWithAave.sol          # Legacy Aave-fixed version
-│   ├── AaveSupplier.sol                    # Standalone Aave helper
-│   ├── AaveAddresses.sol                   # Network address config
 │   └── interfaces/
-│       ├── IAavePool.sol                   # Aave V3 Pool
-│       ├── IChainlinkAggregator.sol        # Chainlink price feed
-│       ├── IComet.sol                      # Compound V3
-│       ├── ISwapRouter.sol                 # Uniswap V3 Router
-│       ├── IERC20.sol
-│       └── IWETH.sol
+│       ├── IChainlinkAggregator.sol        # Chainlink AggregatorV3Interface
+│       └── IERC20.sol                      # ERC20 approve / balanceOf
 ├── test/
-│   ├── MultisigWallet.t.sol
-│   ├── MultisigWalletWithAave.t.sol
 │   └── MultisigWalletWithStrategies.t.sol  # 26 tests
 ├── script/
-│   ├── DeployMultisig.s.sol
-│   ├── DeployMultisigWithAave.s.sol
-│   └── DeployMultisigWithStrategies.s.sol
+│   └── DeployMultisigWithStrategies.s.sol  # Forge deploy script
 ├── backend/                                # Python strategy engine
 │   ├── main.py                             # FastAPI app entry
 │   ├── config.py                           # Token registry + pair list
@@ -158,9 +146,9 @@ blockchain-final/
 │   ├── models/
 │   │   └── strategy.py                     # Pydantic data models
 │   ├── services/
-│   │   ├── price_service.py                # Chainlink + Uniswap V3 slot0
+│   │   ├── price_service.py                # Chainlink feeds + Uniswap V3 slot0
 │   │   ├── lending_service.py              # Compound & Aave APY queries
-│   │   ├── dex_service.py                  # QuoterV2 + swap calldata
+│   │   ├── dex_service.py                  # QuoterV2 estimate + swap calldata
 │   │   └── strategy_engine.py             # Multi-pair scanner + calldata
 │   └── routers/
 │       ├── prices.py                       # GET /api/prices

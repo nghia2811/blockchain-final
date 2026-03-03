@@ -153,17 +153,8 @@ def _build_pairs() -> list:
 ARBITRAGE_PAIRS: list = _build_pairs()
 
 # -----------------------------------------------------------------------
-# Backward-compat aliases derived from the TOKENS registry
+# Convenience aliases used by lending_service and calldata router
 # -----------------------------------------------------------------------
 WETH: str = TOKENS["WETH"]["address"]
 WBTC: str = TOKENS["WBTC"]["address"]
 USDC: str = TOKENS["USDC"]["address"]
-CHAINLINK_ETH_USD: str = TOKENS["WETH"]["chainlink_usd"]
-CHAINLINK_BTC_USD: str = TOKENS["WBTC"]["chainlink_usd"]
-
-# First WETH/WBTC pair pool (for backward compat with old callers)
-UNISWAP_WETH_WBTC_POOL: str = next(
-    (p["pool_address"] for p in ARBITRAGE_PAIRS
-     if p["token0"] == "WETH" and p["token1"] == "WBTC"),
-    "0xCBCdF9626bC03E24f779434178A73a0B4bad62eD",
-)
