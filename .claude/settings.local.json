@@ -23,7 +23,9 @@
       "Bash(powershell -Command \"Get-Command forge -ErrorAction SilentlyContinue; Get-ChildItem ~\\\\.foundry\\\\bin\\\\ 2>$null; Get-ChildItem $env:USERPROFILE\\\\.foundry\\\\bin\\\\ 2>$null\")",
       "Bash(powershell -NoProfile -Command \"& { ls C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\ }\")",
       "Bash(powershell -NoProfile -Command \"& { cd d:\\\\nghiant1\\\\blockchain-final; C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\forge.exe build 2>&1 }\")",
-      "Bash(powershell -NoProfile -Command \"& { cd d:\\\\nghiant1\\\\blockchain-final; C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\forge.exe test --match-contract MultisigWalletWithStrategiesTest -v 2>&1 }\")"
+      "Bash(powershell -NoProfile -Command \"& { cd d:\\\\nghiant1\\\\blockchain-final; C:\\\\Users\\\\VCB\\\\.foundry\\\\bin\\\\forge.exe test --match-contract MultisigWalletWithStrategiesTest -v 2>&1 }\")",
+      "Bash(source venv/bin/activate)",
+      "Bash(curl -s http://localhost:8000/docs -o /dev/null -w \"%{http_code}\")"
     ]
   }
 }

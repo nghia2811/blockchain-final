@@ -28,3 +28,9 @@ node_modules/
 
 # Build artifacts
 broadcast/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+backend/venv/

@@ -3,9 +3,7 @@
 // ============================================================
 
 // ---- Contract Configuration (update after forge deploy) ----
-const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS_HERE";
-
-// ---- Backend API (update if backend runs on a different port) ----
+const CONTRACT_ADDRESS = "0x0FDEa090F5665b80C71a7E79E1B951Cb209d5B45";
 const BACKEND_URL = "http://localhost:8000";
 
 // ---- Contract ABI for MultisigWalletWithStrategies ----
@@ -114,6 +112,10 @@ function setupEventListeners() {
 
 async function connectWallet() {
     try {
+        if (typeof window.ethereum === 'undefined') {
+            showToast('MetaMask not found. Please install MetaMask extension.', 'error');
+            return;
+        }
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         currentAccount = accounts[0].toLowerCase();
 
