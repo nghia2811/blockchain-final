@@ -3,7 +3,7 @@
 // ============================================================
 
 // ---- Contract Configuration (update after forge deploy) ----
-const CONTRACT_ADDRESS = "0x0FDEa090F5665b80C71a7E79E1B951Cb209d5B45";
+const CONTRACT_ADDRESS = "0x23b7449875f57117b4df194405e4c775b895CF19";
 const BACKEND_URL = "http://localhost:8000";
 
 // ---- Contract ABI for MultisigWalletWithStrategies ----
