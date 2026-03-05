@@ -292,7 +292,7 @@ class StrategyEngine:
             address=Web3.to_checksum_address(config.COMPOUND_V3_USDC),
             abi=COMET_SUPPLY_ABI,
         )
-        return comet.encodeABI(
+        return comet.encode_abi(
             fn_name="supply",
             args=[Web3.to_checksum_address(asset), amount],
         )
@@ -307,7 +307,7 @@ class StrategyEngine:
             if config.CONTRACT_ADDRESS
             else "0x0000000000000000000000000000000000000001"
         )
-        return pool.encodeABI(
+        return pool.encode_abi(
             fn_name="supply",
             args=[Web3.to_checksum_address(asset), amount, on_behalf_of, 0],
         )
