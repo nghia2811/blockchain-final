@@ -4,6 +4,8 @@
 
 // ---- Contract Configuration (update after forge deploy) ----
 const CONTRACT_ADDRESS = "0x23b7449875f57117b4df194405e4c775b895CF19";
+
+// ---- Backend API (update if backend runs on a different port) ----
 const BACKEND_URL = "http://localhost:8000";
 
 // ---- Contract ABI for MultisigWalletWithStrategies ----
