@@ -293,7 +293,7 @@ class StrategyEngine:
             abi=COMET_SUPPLY_ABI,
         )
         return comet.encode_abi(
-            fn_name="supply",
+            "supply",
             args=[Web3.to_checksum_address(asset), amount],
         )
 
@@ -308,6 +308,6 @@ class StrategyEngine:
             else "0x0000000000000000000000000000000000000001"
         )
         return pool.encode_abi(
-            fn_name="supply",
+            "supply",
             args=[Web3.to_checksum_address(asset), amount, on_behalf_of, 0],
         )
