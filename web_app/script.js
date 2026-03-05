@@ -133,7 +133,7 @@ async function connectWallet() {
         showToast('Wallet connected successfully!', 'success');
     } catch (error) {
         console.error('Error connecting wallet:', error);
-        showToast('Failed to connect wallet: ' + error.message, 'error');
+        showToast('Failed to connect wallet: ' + shortError(error.message), 'error');
     }
 }
 
@@ -424,7 +424,7 @@ async function createProposal() {
 
     } catch (error) {
         console.error('Error creating proposal:', error);
-        showToast('Failed to create proposal: ' + error.message, 'error');
+        showToast('Failed to create proposal: ' + shortError(error.message), 'error');
     }
 }
 
@@ -438,7 +438,7 @@ async function approveProposal(id) {
         await loadDashboardData();
         await loadProposals();
     } catch (e) {
-        showToast('Failed to approve: ' + e.message, 'error');
+        showToast('Failed to approve: ' + shortError(e.message), 'error');
     }
 }
 
@@ -452,7 +452,7 @@ async function executeProposal(id) {
         await loadDashboardData();
         await loadProposals();
     } catch (e) {
-        showToast('Failed to execute: ' + e.message, 'error');
+        showToast('Failed to execute: ' + shortError(e.message), 'error');
     }
 }
 
@@ -611,6 +611,15 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => {
         el.classList.toggle('active', el.id === tabId);
     });
+}
+
+function shortError(msg) {
+    if (!msg) return 'Unknown error';
+    // Extract revert reason if present
+    const revertMatch = msg.match(/execution reverted: ([^"\\(]+)/);
+    if (revertMatch) return revertMatch[1].trim();
+    // Truncate long messages
+    return msg.length > 80 ? msg.slice(0, 80) + '…' : msg;
 }
 
 function showToast(message, type = 'info') {
