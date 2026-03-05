@@ -46,24 +46,6 @@ class DexService:
             abi=QUOTER_V2_ABI,
         )
 
-    # -----------------------------------------------------------------------
-    # Arbitrage spread detection
-    # -----------------------------------------------------------------------
-
-    def get_arbitrage_spread(
-        self,
-        chainlink_eth_btc: float,   # ETH/BTC from Chainlink (e.g. 0.05)
-        dex_eth_btc: float,         # ETH/BTC from Uniswap pool
-    ) -> float:
-        """
-        Return percentage spread between Chainlink and DEX price.
-        Positive = DEX prices ETH higher than Chainlink → sell ETH on DEX.
-        Negative = DEX prices ETH lower than Chainlink  → buy ETH on DEX.
-        """
-        if chainlink_eth_btc == 0:
-            return 0.0
-        return ((dex_eth_btc - chainlink_eth_btc) / chainlink_eth_btc) * 100
-
     def estimate_swap_output(
         self,
         token_in: str,

@@ -218,34 +218,3 @@ class PriceService:
         except Exception as e:
             return 0.0, str(e)
 
-    # -----------------------------------------------------------------------
-    # Backward-compat: old single-pool helper
-    # -----------------------------------------------------------------------
-
-    def get_uniswap_v3_spot_price(
-        self,
-        pool_address: str,
-        token0_decimals: int = 18,
-        token1_decimals: int = 8,
-    ) -> float:
-        """
-        Decode sqrtPriceX96 directly (no address lookup).
-        Returns canonical token1 per canonical token0 (adjusted for decimals).
-        """
-        pool = self.w3.eth.contract(
-            address=Web3.to_checksum_address(pool_address),
-            abi=UNISWAP_V3_POOL_ABI,
-        )
-        sqrt_price_x96 = pool.functions.slot0().call()[0]
-        if sqrt_price_x96 == 0:
-            return 0.0
-        price_raw = (sqrt_price_x96 / (2 ** 96)) ** 2
-        return price_raw * (10 ** token0_decimals) / (10 ** token1_decimals)
-
-    def get_weth_wbtc_dex_price(self) -> float:
-        """ETH price in BTC from the Uniswap V3 WETH/WBTC pool."""
-        return self.get_uniswap_v3_spot_price(
-            config.UNISWAP_WETH_WBTC_POOL,
-            token0_decimals=18,
-            token1_decimals=8,
-        )

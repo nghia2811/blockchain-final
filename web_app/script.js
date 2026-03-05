@@ -114,6 +114,10 @@ function setupEventListeners() {
 
 async function connectWallet() {
     try {
+        if (typeof window.ethereum === 'undefined') {
+            showToast('MetaMask not found. Please install MetaMask extension.', 'error');
+            return;
+        }
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         currentAccount = accounts[0].toLowerCase();
 
