@@ -3,7 +3,7 @@
 // ============================================================
 
 // ---- Contract Configuration (update after forge deploy) ----
-const CONTRACT_ADDRESS = "0x0FDEa090F5665b80C71a7E79E1B951Cb209d5B45";
+const CONTRACT_ADDRESS = "0x195FA537B17734Bb4fDEE405146dAb5F9Dca72be";
 const BACKEND_URL = "http://localhost:8000";
 
 // ---- Contract ABI for MultisigWalletWithStrategies ----
@@ -120,7 +120,7 @@ async function connectWallet() {
         currentAccount = accounts[0].toLowerCase();
 
         provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer   = provider.getSigner();
+        signer = provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
         await updateAccountUI();
@@ -153,11 +153,12 @@ async function updateAccountUI() {
     document.getElementById('accountInfo').classList.remove('hidden');
     document.getElementById('accountAddress').textContent =
         `${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`;
+    console.log(`${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`);
     try {
         isAdmin = await contract.isAdmin(currentAccount);
         const role = document.getElementById('accountRole');
-        role.textContent  = isAdmin ? 'Admin' : 'Guest';
-        role.className    = `badge ${isAdmin ? 'admin' : 'guest'}`;
+        role.textContent = isAdmin ? 'Admin' : 'Guest';
+        role.className = `badge ${isAdmin ? 'admin' : 'guest'}`;
     } catch (e) {
         console.error(e);
     }
@@ -174,7 +175,7 @@ function startPriceTicker() {
 
 async function fetchAndDisplayPrices() {
     try {
-        const res  = await fetch(`${BACKEND_URL}/api/prices`);
+        const res = await fetch(`${BACKEND_URL}/api/prices`);
         if (!res.ok) return;
         const data = await res.json();
 
@@ -186,7 +187,7 @@ async function fetchAndDisplayPrices() {
         const fresh = document.getElementById('tickerFreshness');
         if (!data.is_fresh) {
             fresh.textContent = '⚠ stale price';
-            fresh.className   = 'price-item price-stale';
+            fresh.className = 'price-item price-stale';
             fresh.style.display = '';
         } else {
             fresh.style.display = 'none';
@@ -208,11 +209,11 @@ async function fetchAndDisplayPrices() {
 async function loadDashboardData() {
     if (!contract) return;
     try {
-        const balance  = await contract.getBalance();
+        const balance = await contract.getBalance();
         document.getElementById('walletBalance').textContent =
             `${ethers.utils.formatEther(balance)} ETH`;
 
-        const threshold  = await contract.threshold();
+        const threshold = await contract.threshold();
         const adminCount = await contract.getAdminCount();
         document.getElementById('thresholdInfo').textContent = `${threshold}/${adminCount}`;
 
@@ -251,7 +252,7 @@ function displayAdmins(admins) {
 async function loadProposals() {
     if (!contract) return;
     try {
-        const count     = await contract.getProposalCount();
+        const count = await contract.getProposalCount();
         const threshold = await contract.threshold();
         const pList = document.getElementById('proposalsList');
         const hList = document.getElementById('historyList');
@@ -261,7 +262,7 @@ async function loadProposals() {
         let hasPending = false, hasHistory = false;
 
         for (let i = 0; i < count; i++) {
-            const p          = await contract.getProposal(i);
+            const p = await contract.getProposal(i);
             const hasApproved = await contract.hasApproved(i, currentAccount);
             if (!p.executed) {
                 hasPending = true;
@@ -280,9 +281,9 @@ async function loadProposals() {
 }
 
 function proposalTypeLabel(proposalType, strategyType) {
-    if (proposalType === 0) return { label: 'Transfer',  cls: 'transfer'  };
-    if (strategyType  === 1) return { label: 'Lending',   cls: 'lending'   };
-    if (strategyType  === 2) return { label: 'Arbitrage', cls: 'arbitrage' };
+    if (proposalType === 0) return { label: 'Transfer', cls: 'transfer' };
+    if (strategyType === 1) return { label: 'Lending', cls: 'lending' };
+    if (strategyType === 2) return { label: 'Arbitrage', cls: 'arbitrage' };
     return { label: 'Strategy', cls: 'strategy' };
 }
 
@@ -308,11 +309,11 @@ function createProposalCard(id, proposal, threshold, hasApproved) {
         </div>
         <div class="proposal-actions">
             ${isAdmin && !hasApproved
-                ? `<button class="btn btn-primary btn-small" onclick="approveProposal(${id})">Approve</button>`
-                : hasApproved ? '<span class="badge admin">Approved</span>' : ''}
+            ? `<button class="btn btn-primary btn-small" onclick="approveProposal(${id})">Approve</button>`
+            : hasApproved ? '<span class="badge admin">Approved</span>' : ''}
             ${isAdmin && proposal.approvalCount >= threshold - 1
-                ? `<button class="btn btn-secondary btn-small" onclick="executeProposal(${id})">Execute</button>`
-                : ''}
+            ? `<button class="btn btn-secondary btn-small" onclick="executeProposal(${id})">Execute</button>`
+            : ''}
         </div>
     `;
     return card;
@@ -350,7 +351,7 @@ function handleProposalTypeChange() {
 async function createProposal() {
     if (!isAdmin) { showToast('Only admins can create proposals', 'error'); return; }
 
-    const type        = document.getElementById('proposalType').value;
+    const type = document.getElementById('proposalType').value;
     const description = document.getElementById('description').value;
 
     if (!description) { showToast('Please enter a description', 'error'); return; }
@@ -359,7 +360,7 @@ async function createProposal() {
         let tx;
 
         if (type === 'transfer') {
-            const amount    = document.getElementById('amount').value;
+            const amount = document.getElementById('amount').value;
             const recipient = document.getElementById('recipient').value;
             if (!amount || parseFloat(amount) <= 0) {
                 showToast('Please enter a valid amount', 'error'); return;
@@ -376,10 +377,10 @@ async function createProposal() {
 
         } else {
             // Strategy proposal (lending or arbitrage)
-            const protocol  = document.getElementById('strategyProtocol').value;
-            const tokenIn   = document.getElementById('strategyTokenIn').value;
-            const amountIn  = document.getElementById('strategyAmountIn').value || "0";
-            const calldata  = document.getElementById('strategyCalldata').value || "0x";
+            const protocol = document.getElementById('strategyProtocol').value;
+            const tokenIn = document.getElementById('strategyTokenIn').value;
+            const amountIn = document.getElementById('strategyAmountIn').value || "0";
+            const calldata = document.getElementById('strategyCalldata').value || "0x";
 
             if (!ethers.utils.isAddress(protocol)) {
                 showToast('Please enter a valid protocol address', 'error'); return;
@@ -409,10 +410,10 @@ async function createProposal() {
 
         // Reset form
         document.getElementById('recipient').value = '';
-        document.getElementById('amount').value    = '';
+        document.getElementById('amount').value = '';
         document.getElementById('description').value = '';
         document.getElementById('strategyProtocol').value = '';
-        document.getElementById('strategyTokenIn').value  = '';
+        document.getElementById('strategyTokenIn').value = '';
         document.getElementById('strategyAmountIn').value = '';
         document.getElementById('strategyCalldata').value = '';
 
@@ -462,23 +463,23 @@ window.executeProposal = executeProposal;
 // ============================================================
 
 async function loadStrategies() {
-    const lendingEl   = document.getElementById('lendingStrategies');
+    const lendingEl = document.getElementById('lendingStrategies');
     const arbitrageEl = document.getElementById('arbitrageStrategies');
-    lendingEl.innerHTML   = '<p class="strategy-empty">Loading...</p>';
+    lendingEl.innerHTML = '<p class="strategy-empty">Loading...</p>';
     arbitrageEl.innerHTML = '<p class="strategy-empty">Loading...</p>';
 
     try {
-        const res  = await fetch(`${BACKEND_URL}/api/strategies/opportunities`);
+        const res = await fetch(`${BACKEND_URL}/api/strategies/opportunities`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        renderStrategies(lendingEl,   data.lending,   'No lending opportunities found right now.');
+        renderStrategies(lendingEl, data.lending, 'No lending opportunities found right now.');
         renderStrategies(arbitrageEl, data.arbitrage, 'No arbitrage opportunities found right now.');
 
     } catch (e) {
         const msg = `<p class="strategy-empty">Could not reach the strategy backend.<br>
                      <small>Make sure <code>uvicorn main:app --reload --port 8000</code> is running.</small></p>`;
-        lendingEl.innerHTML   = msg;
+        lendingEl.innerHTML = msg;
         arbitrageEl.innerHTML = msg;
     }
 }
@@ -493,8 +494,8 @@ function renderStrategies(container, strategies, emptyMsg) {
 }
 
 function createStrategyCard(s) {
-    const now      = Math.floor(Date.now() / 1000);
-    const expired  = s.expires_at && s.expires_at < now;
+    const now = Math.floor(Date.now() / 1000);
+    const expired = s.expires_at && s.expires_at < now;
     const expLabel = expired
         ? '<span class="strategy-expires strategy-expired">Expired</span>'
         : s.expires_at
@@ -528,11 +529,11 @@ function createStrategyCard(s) {
         <div class="strategy-footer">
             ${expLabel}
             ${isAdmin && !expired
-                ? `<button class="btn btn-primary btn-small"
+            ? `<button class="btn btn-primary btn-small"
                        onclick='createProposalFromStrategy(${JSON.stringify(s)})'>
                        Create Proposal
                    </button>`
-                : '<span></span>'}
+            : '<span></span>'}
         </div>
     `;
     return card;
@@ -553,10 +554,10 @@ function createProposalFromStrategy(strategy) {
 
     // Fill strategy fields
     document.getElementById('strategyProtocol').value = strategy.protocol_address;
-    document.getElementById('strategyTokenIn').value  = strategy.token_in;
+    document.getElementById('strategyTokenIn').value = strategy.token_in;
     document.getElementById('strategyAmountIn').value = strategy.amount_suggestion_wei;
     document.getElementById('strategyCalldata').value = strategy.calldata;
-    document.getElementById('description').value      = strategy.description;
+    document.getElementById('description').value = strategy.description;
 
     showToast('Strategy pre-loaded into the form. Review and submit.', 'info');
 }

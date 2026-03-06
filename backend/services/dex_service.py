@@ -133,5 +133,5 @@ class DexService:
             "amountOutMinimum":  amount_out_min_wei,
             "sqrtPriceLimitX96": 0,
         }
-        calldata = router.encodeABI(fn_name="exactInputSingle", args=[params])
+        calldata = router.encode_abi(abi_element_identifier="exactInputSingle", args=[params])
         return calldata
