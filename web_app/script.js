@@ -97,10 +97,20 @@ const PORTFOLIO_ASSETS = [
     }
 ];
 
+// Tracked wallet tokens (base ERC20 tokens, NOT aTokens/cTokens)
+const WALLET_TOKENS = [
+    { symbol: "WETH", name: "Wrapped ETH", address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18, priceKey: "WETH" },
+    { symbol: "WBTC", name: "Wrapped BTC", address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", decimals: 8, priceKey: "WBTC" },
+    { symbol: "USDC", name: "USD Coin", address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6, priceKey: "USDC" },
+    { symbol: "LINK", name: "Chainlink", address: "0x514910771AF9Ca656af840dff83E8264EcF986CA", decimals: 18, priceKey: "LINK" },
+    { symbol: "UNI", name: "Uniswap", address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", decimals: 18, priceKey: "UNI" },
+];
+
 // Global state
 let provider, signer, contract;
 let currentAccount = null;
 let isAdmin = false;
+let latestTokenPrices = {};  // cached {WETH: 3200.0, ...}
 
 // Price refresh interval (30 s)
 let priceInterval = null;
@@ -279,6 +289,13 @@ async function fetchAndDisplayPrices() {
         document.getElementById('tickerEthUsd').textContent = fmt(data.eth_usd);
         document.getElementById('tickerBtcUsd').textContent = fmt(data.btc_usd);
 
+        // Cache token prices for balance display
+        if (data.token_prices) {
+            latestTokenPrices = data.token_prices;
+        }
+        // Also cache ETH/WETH from top-level
+        latestTokenPrices['ETH'] = data.eth_usd;
+
         const fresh = document.getElementById('tickerFreshness');
         if (!data.is_fresh) {
             fresh.textContent = '⚠ stale price';
@@ -305,8 +322,16 @@ async function loadDashboardData() {
     if (!contract) return;
     try {
         const balance = await contract.getBalance();
+        const ethBalFormatted = ethers.utils.formatEther(balance);
         document.getElementById('walletBalance').textContent =
-            `${ethers.utils.formatEther(balance)} ETH`;
+            `${ethBalFormatted} ETH`;
+
+        // Show ETH USD value
+        const ethPrice = latestTokenPrices['ETH'] || latestTokenPrices['WETH'] || 0;
+        if (ethPrice > 0) {
+            const ethUsdVal = (parseFloat(ethBalFormatted) * ethPrice).toFixed(2);
+            document.getElementById('walletBalanceUsd').textContent = `≈ $${Number(ethUsdVal).toLocaleString()}`;
+        }
 
         const threshold = await contract.threshold();
         const adminCount = await contract.getAdminCount();
@@ -323,6 +348,9 @@ async function loadDashboardData() {
         }
         document.getElementById('pendingCount').textContent = pending;
 
+        // Load token balances
+        await loadTokenBalances();
+
     } catch (e) {
         console.error('Error loading dashboard data:', e);
         showToast('Error loading dashboard data', 'error');
@@ -338,6 +366,68 @@ function displayAdmins(admins) {
         badge.textContent = `${admin.slice(0, 6)}...${admin.slice(-4)}`;
         list.appendChild(badge);
     });
+}
+
+// ============================================================
+// TOKEN BALANCES (dashboard)
+// ============================================================
+
+async function loadTokenBalances() {
+    if (!contract) return;
+    const grid = document.getElementById('tokenHoldingsGrid');
+    if (!grid) return;
+
+    try {
+        const holdings = [];
+
+        for (const token of WALLET_TOKENS) {
+            try {
+                const balanceWei = await contract.getTokenBalance(token.address);
+                if (balanceWei.gt(0)) {
+                    const formatted = ethers.utils.formatUnits(balanceWei, token.decimals);
+                    const price = latestTokenPrices[token.priceKey] || 0;
+                    const usdValue = price > 0 ? (parseFloat(formatted) * price) : 0;
+                    holdings.push({ ...token, balanceWei, formatted, usdValue });
+                }
+            } catch (err) {
+                console.warn(`Could not load balance for ${token.symbol}:`, err.message);
+            }
+        }
+
+        if (holdings.length === 0) {
+            grid.innerHTML = '<p class="token-holdings-empty">No ERC20 tokens held by this wallet</p>';
+            return;
+        }
+
+        // Sort by USD value descending
+        holdings.sort((a, b) => b.usdValue - a.usdValue);
+
+        grid.innerHTML = '';
+        for (const h of holdings) {
+            const card = document.createElement('div');
+            card.className = 'token-holding-card';
+
+            const iconClass = h.symbol.toLowerCase();
+            const usdStr = h.usdValue > 0
+                ? `≈ $${h.usdValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+                : '';
+
+            // Format balance nicely (remove trailing zeroes, max 8 decimals)
+            const balDisplay = parseFloat(parseFloat(h.formatted).toFixed(8));
+
+            card.innerHTML = `
+                <div class="token-icon ${iconClass}">${h.symbol}</div>
+                <div class="token-info">
+                    <div class="token-symbol">${h.name}</div>
+                    <div class="token-balance-value">${balDisplay} ${h.symbol}</div>
+                    <div class="token-usd-value">${usdStr}</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+    } catch (e) {
+        console.error('Error loading token balances:', e);
+    }
 }
 
 // ============================================================
@@ -845,6 +935,7 @@ function setupContractEvents() {
         const names = { 0: 'None', 1: 'Lending', 2: 'Arbitrage' };
         showToast(`Strategy executed: ${names[strategyType] || strategyType} on ${protocol.slice(0, 8)}...`, 'success');
         await loadPortfolio();
+        await loadTokenBalances();
     });
 }
 

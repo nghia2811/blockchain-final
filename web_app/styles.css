@@ -185,6 +185,110 @@ body {
     margin-top: 4px;
 }
 
+/* Token Holdings */
+.token-holdings-section {
+    margin-bottom: 30px;
+}
+
+.token-holdings-title {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.token-holdings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.token-holding-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.token-holding-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.token-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.token-icon.eth {
+    background: linear-gradient(135deg, #627eea, #3b5998);
+}
+
+.token-icon.weth {
+    background: linear-gradient(135deg, #627eea, #3b5998);
+}
+
+.token-icon.wbtc {
+    background: linear-gradient(135deg, #f7931a, #e2761b);
+}
+
+.token-icon.usdc {
+    background: linear-gradient(135deg, #2775ca, #1a5bb5);
+}
+
+.token-icon.link {
+    background: linear-gradient(135deg, #2a5ada, #1a3f99);
+}
+
+.token-icon.uni {
+    background: linear-gradient(135deg, #ff007a, #c60060);
+}
+
+.token-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.token-symbol {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.token-balance-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.token-usd-value {
+    font-size: 0.78rem;
+    color: var(--secondary-color);
+    margin-top: 2px;
+}
+
+.token-holdings-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem 0;
+    font-style: italic;
+}
+
 /* Admins Section */
 .admins-section {
     margin-bottom: 30px;
@@ -258,8 +362,15 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Proposals */
@@ -529,6 +640,7 @@ body {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;

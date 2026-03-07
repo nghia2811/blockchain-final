@@ -225,8 +225,9 @@
             <section class="dashboard">
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <h3>Wallet Balance</h3>
+                        <h3>ETH Balance</h3>
                         <p id="walletBalance" class="stat-value">0 ETH</p>
+                        <span id="walletBalanceUsd" class="interest"></span>
                     </div>
                     <div class="stat-card">
                         <h3>ETH Price</h3>
@@ -242,7 +243,16 @@
                         <p id="thresholdInfo" class="stat-value">0/0</p>
                     </div>
                 </div>
+
+                <!-- Token Holdings -->
+                <div class="token-holdings-section">
+                    <h2 class="token-holdings-title">💰 Wallet Token Holdings</h2>
+                    <div id="tokenHoldingsGrid" class="token-holdings-grid">
+                        <p class="empty-state" style="grid-column:1/-1;">Connect wallet to view holdings</p>
+                    </div>
+                </div>
             </section>
+
 
             <!-- Admin List -->
             <section class="admins-section">

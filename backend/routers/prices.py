@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Dict
 
 from services.price_service import PriceService
 
@@ -13,11 +14,12 @@ class PricesResponse(BaseModel):
     eth_btc_ratio: float
     updated_at: int
     is_fresh: bool
+    token_prices: Dict[str, float] = {}
 
 
 @router.get("", response_model=PricesResponse)
 def get_prices():
-    """Return latest ETH/USD and BTC/USD prices from Chainlink."""
+    """Return latest prices from Chainlink for all configured tokens."""
     try:
         snap = _svc.get_price_snapshot()
         return PricesResponse(
@@ -26,6 +28,7 @@ def get_prices():
             eth_btc_ratio=snap.eth_btc_ratio,
             updated_at=snap.updated_at,
             is_fresh=snap.is_fresh,
+            token_prices=snap.token_prices,
         )
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))

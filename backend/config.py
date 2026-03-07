@@ -5,7 +5,7 @@ import json
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 def _require(key: str) -> str:
@@ -42,7 +42,7 @@ AAVE_V3_WETH_GATEWAY: str = os.getenv(
 # -----------------------------------------------------------------------
 # Strategy thresholds
 # -----------------------------------------------------------------------
-ARBITRAGE_MIN_SPREAD_PCT: float = float(os.getenv("ARBITRAGE_MIN_SPREAD_PCT", "0.3"))
+ARBITRAGE_MIN_SPREAD_PCT: float = float(os.getenv("ARBITRAGE_MIN_SPREAD_PCT", "0.0"))
 LENDING_MIN_APY_PCT: float      = float(os.getenv("LENDING_MIN_APY_PCT", "1.0"))
 PRICE_STALE_SECONDS: int        = int(os.getenv("PRICE_STALE_SECONDS", "3600"))
 
