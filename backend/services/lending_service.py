@@ -136,27 +136,43 @@ class LendingService:
         """
         Compare Compound and Aave rates and return the better option.
         """
-        asset_address = {
-            "USDC": config.USDC,
-            "WETH": config.WETH,
-        }.get(asset_symbol, config.USDC)
-
-        compound_apy = self.get_compound_supply_apy()
-        aave_apy     = self.get_aave_supply_apy(asset_address)
-
-        if compound_apy >= aave_apy:
+        token_meta = config.TOKENS.get(asset_symbol)
+        if not token_meta:
+            return {}
+        
+        asset_address = token_meta.get("address")
+        
+        if asset_symbol == "ETH":
+            # For ETH, we still check the WETH reserve in Aave to get APY
+            aave_apy = self.get_aave_supply_apy(config.WETH)
             return {
-                "protocol":         "Compound V3",
-                "protocol_address": config.COMPOUND_V3_USDC,
-                "apy":              compound_apy,
-                "asset":            asset_address,
-                "asset_symbol":     asset_symbol,
-            }
-        else:
-            return {
-                "protocol":         "Aave V3",
-                "protocol_address": config.AAVE_V3_POOL,
+                "protocol":         "Aave V3 WETH Gateway",
+                "protocol_address": config.AAVE_V3_WETH_GATEWAY,
                 "apy":              aave_apy,
-                "asset":            asset_address,
-                "asset_symbol":     asset_symbol,
+                "asset":            "ETH",
+                "asset_symbol":     "ETH",
             }
+            
+        if not asset_address:
+            return {}
+
+        aave_apy = self.get_aave_supply_apy(asset_address)
+
+        if asset_symbol == "USDC":
+            compound_apy = self.get_compound_supply_apy()
+            if compound_apy >= aave_apy:
+                return {
+                    "protocol":         "Compound V3",
+                    "protocol_address": config.COMPOUND_V3_USDC,
+                    "apy":              compound_apy,
+                    "asset":            asset_address,
+                    "asset_symbol":     asset_symbol,
+                }
+
+        return {
+            "protocol":         "Aave V3",
+            "protocol_address": config.AAVE_V3_POOL,
+            "apy":              aave_apy,
+            "asset":            asset_address,
+            "asset_symbol":     asset_symbol,
+        }

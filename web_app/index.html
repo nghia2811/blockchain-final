@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,11 +17,27 @@
             color: #94a3b8;
             margin-bottom: 0.5rem;
         }
-        .price-ticker .price-item { display: flex; gap: 0.4rem; align-items: center; }
-        .price-ticker .price-value { font-weight: 600; color: #e2e8f0; }
-        .price-ticker .price-stale { color: #f59e0b; }
 
-        .strategy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem; }
+        .price-ticker .price-item {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        .price-ticker .price-value {
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .price-ticker .price-stale {
+            color: #f59e0b;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.2rem;
+        }
 
         .strategy-card {
             background: #1e293b;
@@ -28,8 +45,20 @@
             border-radius: 12px;
             padding: 1.2rem 1.4rem;
         }
-        .strategy-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.7rem; }
-        .strategy-card-header h3 { margin: 0; font-size: 1rem; color: #e2e8f0; }
+
+        .strategy-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.7rem;
+        }
+
+        .strategy-card-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #e2e8f0;
+        }
+
         .strategy-type-badge {
             font-size: 0.72rem;
             font-weight: 700;
@@ -37,37 +66,127 @@
             padding: 2px 8px;
             border-radius: 20px;
         }
-        .strategy-type-badge.lending   { background: #1d4ed8; color: #bfdbfe; }
-        .strategy-type-badge.arbitrage { background: #7c3aed; color: #ddd6fe; }
 
-        .strategy-metrics { display: flex; gap: 1.5rem; margin-bottom: 0.8rem; }
-        .strategy-metric label { font-size: 0.72rem; color: #64748b; display: block; margin-bottom: 2px; }
-        .strategy-metric .value { font-size: 1.1rem; font-weight: 700; color: #38bdf8; }
-        .risk-1,.risk-2  { color: #4ade80; }
-        .risk-3,.risk-4  { color: #a3e635; }
-        .risk-5,.risk-6  { color: #facc15; }
-        .risk-7,.risk-8  { color: #fb923c; }
-        .risk-9,.risk-10 { color: #f87171; }
+        .strategy-type-badge.lending {
+            background: #1d4ed8;
+            color: #bfdbfe;
+        }
 
-        .strategy-desc { font-size: 0.82rem; color: #94a3b8; margin-bottom: 1rem; line-height: 1.4; }
+        .strategy-type-badge.arbitrage {
+            background: #7c3aed;
+            color: #ddd6fe;
+        }
 
-        .strategy-footer { display: flex; justify-content: space-between; align-items: center; }
-        .strategy-expires { font-size: 0.72rem; color: #475569; }
-        .strategy-expired { color: #f87171; }
+        .strategy-metrics {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
 
-        .strategy-empty { text-align: center; color: #64748b; padding: 3rem 0; }
+        .strategy-metric label {
+            font-size: 0.72rem;
+            color: #64748b;
+            display: block;
+            margin-bottom: 2px;
+        }
 
-        .strategies-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
-        .strategies-header h2 { margin: 0; }
-        .btn-refresh { font-size: 0.8rem; }
+        .strategy-metric .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .risk-1,
+        .risk-2 {
+            color: #4ade80;
+        }
+
+        .risk-3,
+        .risk-4 {
+            color: #a3e635;
+        }
+
+        .risk-5,
+        .risk-6 {
+            color: #facc15;
+        }
+
+        .risk-7,
+        .risk-8 {
+            color: #fb923c;
+        }
+
+        .risk-9,
+        .risk-10 {
+            color: #f87171;
+        }
+
+        .strategy-desc {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .strategy-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .strategy-expires {
+            font-size: 0.72rem;
+            color: #475569;
+        }
+
+        .strategy-expired {
+            color: #f87171;
+        }
+
+        .strategy-empty {
+            text-align: center;
+            color: #64748b;
+            padding: 3rem 0;
+        }
+
+        .strategies-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+        }
+
+        .strategies-header h2 {
+            margin: 0;
+        }
+
+        .btn-refresh {
+            font-size: 0.8rem;
+        }
 
         /* Proposal type badges */
-        .proposal-type.transfer  { background: #1e3a5f; color: #90cdf4; }
-        .proposal-type.strategy  { background: #3b0764; color: #e9d5ff; }
-        .proposal-type.lending   { background: #1d3d6e; color: #bfdbfe; }
-        .proposal-type.arbitrage { background: #4c1d95; color: #ddd6fe; }
+        .proposal-type.transfer {
+            background: #1e3a5f;
+            color: #90cdf4;
+        }
+
+        .proposal-type.strategy {
+            background: #3b0764;
+            color: #e9d5ff;
+        }
+
+        .proposal-type.lending {
+            background: #1d3d6e;
+            color: #bfdbfe;
+        }
+
+        .proposal-type.arbitrage {
+            background: #4c1d95;
+            color: #ddd6fe;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -129,6 +248,7 @@
             <!-- Tabs -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="proposals">Proposals</button>
+                <button class="tab-btn" data-tab="portfolio">Portfolio</button>
                 <button class="tab-btn" data-tab="create">Create Proposal</button>
                 <button class="tab-btn" data-tab="strategies">Investment Strategies</button>
                 <button class="tab-btn" data-tab="history">History</button>
@@ -139,6 +259,14 @@
                 <h2>Pending Proposals</h2>
                 <div id="proposalsList" class="proposals-list">
                     <p class="empty-state">No pending proposals</p>
+                </div>
+            </section>
+
+            <!-- Tab Content: Portfolio -->
+            <section id="portfolio" class="tab-content">
+                <h2>Active Lending Portfolio</h2>
+                <div id="portfolioList" class="strategy-grid">
+                    <p class="empty-state">Loading portfolio...</p>
                 </div>
             </section>
 
@@ -179,7 +307,8 @@
                         </div>
                         <div class="form-group">
                             <label>Calldata (hex)</label>
-                            <textarea id="strategyCalldata" placeholder="0x..." rows="3" style="font-family:monospace;font-size:0.8rem;"></textarea>
+                            <textarea id="strategyCalldata" placeholder="0x..." rows="3"
+                                style="font-family:monospace;font-size:0.8rem;"></textarea>
                         </div>
                     </div>
 
@@ -236,4 +365,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>

@@ -35,6 +35,11 @@ AAVE_V3_POOL: str = os.getenv(
 )
 
 # -----------------------------------------------------------------------
+AAVE_V3_WETH_GATEWAY: str = os.getenv(
+    "AAVE_V3_WETH_GATEWAY", "0xd01607c3C5eCABa394D8be377a08590149325722"
+)
+
+# -----------------------------------------------------------------------
 # Strategy thresholds
 # -----------------------------------------------------------------------
 ARBITRAGE_MIN_SPREAD_PCT: float = float(os.getenv("ARBITRAGE_MIN_SPREAD_PCT", "0.3"))
@@ -51,6 +56,12 @@ PRICE_STALE_SECONDS: int        = int(os.getenv("PRICE_STALE_SECONDS", "3600"))
 #                        "chainlink_usd":"0x547...","default_amount":1000000000000000000}}'
 # -----------------------------------------------------------------------
 _TOKEN_DEFAULTS: dict = {
+    "ETH": {
+        "address":        "ETH",
+        "decimals":       18,
+        "chainlink_usd":  os.getenv("CHAINLINK_ETH_USD",  "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"),
+        "default_amount": int(0.1 * 10 ** 18),
+    },
     "WETH": {
         "address":        os.getenv("WETH", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         "decimals":       18,
