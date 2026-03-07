@@ -116,12 +116,11 @@ class DexService:
             abi=router_abi,
         )
 
-        # Use the current block timestamp as deadline base
-        try:
-            current_ts = self.w3.eth.get_block("latest")["timestamp"]
-        except Exception:
-            import time
-            current_ts = int(time.time())
+        # Always use real wall-clock time for deadline.
+        # Anvil's block timestamp may be frozen at fork time, causing
+        # "Transaction too old" errors on Uniswap Router.
+        import time as _time
+        current_ts = int(_time.time())
 
         params = {
             "tokenIn":           Web3.to_checksum_address(token_in),
