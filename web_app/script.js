@@ -3,9 +3,7 @@
 // ============================================================
 
 // ---- Contract Configuration (update after forge deploy) ----
-const CONTRACT_ADDRESS = "0x23b7449875f57117b4df194405e4c775b895CF19";
-
-// ---- Backend API (update if backend runs on a different port) ----
+const CONTRACT_ADDRESS = "0x195FA537B17734Bb4fDEE405146dAb5F9Dca72be";
 const BACKEND_URL = "http://localhost:8000";
 
 // ---- Contract ABI for MultisigWalletWithStrategies ----
@@ -63,6 +61,42 @@ const CONTRACT_ABI = [
 // StrategyType enum values (must match Solidity enum order)
 const StrategyType = { NONE: 0, LENDING: 1, ARBITRAGE: 2 };
 
+// Tracked Portfolio Tokens (Aave aTokens, Compound cTokens)
+const PORTFOLIO_ASSETS = [
+    {
+        symbol: "aWETH", name: "Aave V3 WETH", address: "0x4d5f47fa6a74757f35c14fd3a6ef8e3c9bc514e8", decimals: 18,
+        withdrawCall: {
+            protocol: "0xd01607c3C5eCABa394D8be377a08590149325722", // WETH_GATEWAY
+            tokenIn: "0x4d5f47fa6a74757f35c14fd3a6ef8e3c9bc514e8",  // Approve aWETH to Gateway
+            abi: ["function withdrawETH(address pool, uint256 amount, address to)"]
+        }
+    },
+    {
+        symbol: "aUSDC", name: "Aave V3 USDC", address: "0x98c23e9d8f34fea023834e462b2dcee2bed9ba25", decimals: 6,
+        withdrawCall: {
+            protocol: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", // AAVE_POOL
+            tokenIn: "0x0000000000000000000000000000000000000000",
+            abi: ["function withdraw(address asset, uint256 amount, address to) returns (uint256)"]
+        }
+    },
+    {
+        symbol: "cUSDCv3", name: "Compound V3 USDC", address: "0xc3d688b66703497daa19211eedff47f25384cdc3", decimals: 6,
+        withdrawCall: {
+            protocol: "0xc3d688B66703497DAA19211EEdff47f25384cdc3", // COMET Mainnet
+            tokenIn: "0x0000000000000000000000000000000000000000",
+            abi: ["function withdraw(address asset, uint256 amount)"]
+        }
+    },
+    {
+        symbol: "aWBTC", name: "Aave V3 WBTC", address: "0x5ee5bf7ae06d1be5997a1a72006fe6c607ec6de8", decimals: 8,
+        withdrawCall: {
+            protocol: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", // AAVE_POOL
+            tokenIn: "0x0000000000000000000000000000000000000000",
+            abi: ["function withdraw(address asset, uint256 amount, address to) returns (uint256)"]
+        }
+    }
+];
+
 // Global state
 let provider, signer, contract;
 let currentAccount = null;
@@ -100,12 +134,70 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             switchTab(btn.dataset.tab);
             if (btn.dataset.tab === 'strategies') loadStrategies();
+            if (btn.dataset.tab === 'portfolio') loadPortfolio();
         });
     });
 
     document.getElementById('createProposalBtn').addEventListener('click', createProposal);
     document.getElementById('proposalType').addEventListener('change', handleProposalTypeChange);
     document.getElementById('refreshStrategiesBtn').addEventListener('click', loadStrategies);
+
+    // Live update helper text when typing in "Amount In (wei)" field
+    const amtInput = document.getElementById('strategyAmountIn');
+    if (amtInput) {
+        amtInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            let helper = document.getElementById('strategyAmountInHelper');
+            if (!helper) {
+                helper = document.createElement('small');
+                helper.id = 'strategyAmountInHelper';
+                helper.style.display = 'block';
+                helper.style.color = '#10b981';
+                helper.style.marginTop = '4px';
+                amtInput.parentNode.appendChild(helper);
+            }
+
+            if (!val || isNaN(val)) {
+                helper.innerText = '';
+                return;
+            }
+
+            try {
+                // Try to format dynamically, default to 18 decimals if cannot find reference
+                const tokenInAddress = document.getElementById('strategyTokenIn').value;
+                const isUSDC = tokenInAddress && tokenInAddress.toLowerCase() === "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+                const decimals = isUSDC ? 6 : 18;
+                const readableAmount = ethers.utils.formatUnits(val, decimals);
+                helper.innerText = `≈ ${readableAmount} tokens`;
+
+                // If this is a WETH Gateway native ETH deposit, sync ethValue and rewrite Calldata
+                const protocolInput = document.getElementById('strategyProtocol').value;
+                if (protocolInput && protocolInput.toLowerCase() === "0xd01607c3c5ecaba394d8be377a08590149325722") { // WETH_GATEWAY
+                    const ethValInput = document.getElementById('strategyEthValue');
+                    if (ethValInput) {
+                        ethValInput.value = val;
+                        // update ethHelper
+                        const ethHelper = document.getElementById('strategyEthHelper');
+                        if (ethHelper) ethHelper.innerText = `+ Sending ${readableAmount} natively attached ETH`;
+                    }
+
+                    // Rewrite calldata: depositETH(address pool, address onBehalfOf, uint16 referralCode)
+                    // The Aave pool address is: 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2
+                    const iface = new ethers.utils.Interface([
+                        "function depositETH(address pool, address onBehalfOf, uint16 referralCode) payable"
+                    ]);
+                    const newCalldata = iface.encodeFunctionData("depositETH", [
+                        "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+                        contract.address,
+                        0
+                    ]);
+                    document.getElementById('strategyCalldata').value = newCalldata;
+                }
+            } catch (err) {
+                helper.innerText = 'Invalid amount';
+            }
+        });
+    }
 }
 
 // ============================================================
@@ -122,12 +214,13 @@ async function connectWallet() {
         currentAccount = accounts[0].toLowerCase();
 
         provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer   = provider.getSigner();
+        signer = provider.getSigner();
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
         await updateAccountUI();
         await loadDashboardData();
         await loadProposals();
+        await loadPortfolio();
         setupContractEvents();
 
         showToast('Wallet connected successfully!', 'success');
@@ -155,11 +248,12 @@ async function updateAccountUI() {
     document.getElementById('accountInfo').classList.remove('hidden');
     document.getElementById('accountAddress').textContent =
         `${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`;
+    console.log(`${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`);
     try {
         isAdmin = await contract.isAdmin(currentAccount);
         const role = document.getElementById('accountRole');
-        role.textContent  = isAdmin ? 'Admin' : 'Guest';
-        role.className    = `badge ${isAdmin ? 'admin' : 'guest'}`;
+        role.textContent = isAdmin ? 'Admin' : 'Guest';
+        role.className = `badge ${isAdmin ? 'admin' : 'guest'}`;
     } catch (e) {
         console.error(e);
     }
@@ -176,7 +270,7 @@ function startPriceTicker() {
 
 async function fetchAndDisplayPrices() {
     try {
-        const res  = await fetch(`${BACKEND_URL}/api/prices`);
+        const res = await fetch(`${BACKEND_URL}/api/prices`);
         if (!res.ok) return;
         const data = await res.json();
 
@@ -188,7 +282,7 @@ async function fetchAndDisplayPrices() {
         const fresh = document.getElementById('tickerFreshness');
         if (!data.is_fresh) {
             fresh.textContent = '⚠ stale price';
-            fresh.className   = 'price-item price-stale';
+            fresh.className = 'price-item price-stale';
             fresh.style.display = '';
         } else {
             fresh.style.display = 'none';
@@ -210,11 +304,11 @@ async function fetchAndDisplayPrices() {
 async function loadDashboardData() {
     if (!contract) return;
     try {
-        const balance  = await contract.getBalance();
+        const balance = await contract.getBalance();
         document.getElementById('walletBalance').textContent =
             `${ethers.utils.formatEther(balance)} ETH`;
 
-        const threshold  = await contract.threshold();
+        const threshold = await contract.threshold();
         const adminCount = await contract.getAdminCount();
         document.getElementById('thresholdInfo').textContent = `${threshold}/${adminCount}`;
 
@@ -247,13 +341,113 @@ function displayAdmins(admins) {
 }
 
 // ============================================================
+// PORTFOLIO
+// ============================================================
+
+async function loadPortfolio() {
+    if (!contract) return;
+    try {
+        const container = document.getElementById('portfolioList');
+        // keep old content briefly until we get new data
+        let html = '';
+        let hasActivePositions = false;
+
+        for (const asset of PORTFOLIO_ASSETS) {
+            try {
+                const balanceWei = await contract.getTokenBalance(asset.address);
+                if (balanceWei.gt(0)) {
+                    hasActivePositions = true;
+                    const formattedBalance = ethers.utils.formatUnits(balanceWei, asset.decimals);
+
+                    html += `
+                        <div class="strategy-card" style="border-left: 4px solid #38bdf8;">
+                            <div class="strategy-card-header">
+                                <h3>${asset.name}</h3>
+                                <span class="strategy-type-badge lending">Lent Asset</span>
+                            </div>
+                            <div class="strategy-metrics" style="margin-bottom:0;">
+                                <div class="strategy-metric">
+                                    <label>Supplied Balance</label>
+                                    <span class="value" style="font-size:1.6rem;">${Number(formattedBalance).toFixed(4)} <small style="font-size:0.9rem;color:#94a3b8;">${asset.symbol}</small></span>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1rem; text-align: right;">
+                                <button class="btn btn-secondary" style="font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="prepareWithdraw('${asset.symbol}', '${balanceWei.toString()}')">
+                                    Withdraw All
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.warn(`Could not load balance for ${asset.symbol} (${asset.address}). Contract might not be initialized on this fork.`);
+            }
+        }
+
+        if (hasActivePositions) {
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="strategy-empty">No active lending positions found in the wallet.</p>';
+        }
+    } catch (e) {
+        console.error('Error loading portfolio:', e);
+    }
+}
+
+async function prepareWithdraw(symbol, balanceWeiStr) {
+    const asset = PORTFOLIO_ASSETS.find(a => a.symbol === symbol);
+    if (!asset || !asset.withdrawCall) return;
+
+    try {
+        const poolAddress = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2"; // AAVE_POOL address
+        const uAssetAddress = asset.symbol === "aWETH" ? "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" : // WETH
+            asset.symbol === "aUSDC" ? "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" : // USDC
+                asset.symbol === "aWBTC" ? "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" : // WBTC
+                    ""; // Not fully mapped for all, but enough for POC
+
+        const iface = new ethers.utils.Interface(asset.withdrawCall.abi);
+        let calldata = "0x";
+
+        // Setup calldata dynamically based on the target protocol
+        if (asset.symbol === "aWETH") {
+            // WETH Gateway args: address pool, uint256 amount, address to
+            calldata = iface.encodeFunctionData("withdrawETH", [poolAddress, ethers.constants.MaxUint256, contract.address]);
+        } else if (asset.symbol.startsWith("a")) {
+            // Aave V3 general args: address asset, uint256 amount, address to
+            calldata = iface.encodeFunctionData("withdraw", [uAssetAddress, ethers.constants.MaxUint256, contract.address]);
+        } else if (asset.symbol === "cUSDCv3") {
+            const cometAssetAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // Withdraw USDC from comet
+            calldata = iface.encodeFunctionData("withdraw", [cometAssetAddress, ethers.constants.MaxUint256]);
+        }
+
+        // Mock a strategy object to load in the form
+        const dummyStrategy = {
+            strategy_type: 'lending',
+            protocol_address: asset.withdrawCall.protocol,
+            token_in: asset.withdrawCall.tokenIn,
+            amount_suggestion_wei: ethers.constants.MaxUint256.toString(), // Approve Max if needed
+            calldata: calldata,
+            description: `Withdraw entire ${asset.symbol} balance from ${asset.name} back to Multisig.`,
+            eth_value: "0"
+        };
+
+        createProposalFromStrategy(dummyStrategy);
+        showToast('Created withdrawal proposal. Review in Create tab.', 'info');
+
+    } catch (e) {
+        console.error("Error formatting withdraw call:", e);
+        showToast("Error building withdrawal proposal", "error");
+    }
+}
+
+// ============================================================
 // PROPOSALS
 // ============================================================
 
 async function loadProposals() {
     if (!contract) return;
     try {
-        const count     = await contract.getProposalCount();
+        const count = await contract.getProposalCount();
         const threshold = await contract.threshold();
         const pList = document.getElementById('proposalsList');
         const hList = document.getElementById('historyList');
@@ -263,7 +457,7 @@ async function loadProposals() {
         let hasPending = false, hasHistory = false;
 
         for (let i = 0; i < count; i++) {
-            const p          = await contract.getProposal(i);
+            const p = await contract.getProposal(i);
             const hasApproved = await contract.hasApproved(i, currentAccount);
             if (!p.executed) {
                 hasPending = true;
@@ -282,9 +476,9 @@ async function loadProposals() {
 }
 
 function proposalTypeLabel(proposalType, strategyType) {
-    if (proposalType === 0) return { label: 'Transfer',  cls: 'transfer'  };
-    if (strategyType  === 1) return { label: 'Lending',   cls: 'lending'   };
-    if (strategyType  === 2) return { label: 'Arbitrage', cls: 'arbitrage' };
+    if (proposalType === 0) return { label: 'Transfer', cls: 'transfer' };
+    if (strategyType === 1) return { label: 'Lending', cls: 'lending' };
+    if (strategyType === 2) return { label: 'Arbitrage', cls: 'arbitrage' };
     return { label: 'Strategy', cls: 'strategy' };
 }
 
@@ -310,11 +504,11 @@ function createProposalCard(id, proposal, threshold, hasApproved) {
         </div>
         <div class="proposal-actions">
             ${isAdmin && !hasApproved
-                ? `<button class="btn btn-primary btn-small" onclick="approveProposal(${id})">Approve</button>`
-                : hasApproved ? '<span class="badge admin">Approved</span>' : ''}
+            ? `<button class="btn btn-primary btn-small" onclick="approveProposal(${id})">Approve</button>`
+            : hasApproved ? '<span class="badge admin">Approved</span>' : ''}
             ${isAdmin && proposal.approvalCount >= threshold - 1
-                ? `<button class="btn btn-secondary btn-small" onclick="executeProposal(${id})">Execute</button>`
-                : ''}
+            ? `<button class="btn btn-secondary btn-small" onclick="executeProposal(${id})">Execute</button>`
+            : ''}
         </div>
     `;
     return card;
@@ -352,7 +546,7 @@ function handleProposalTypeChange() {
 async function createProposal() {
     if (!isAdmin) { showToast('Only admins can create proposals', 'error'); return; }
 
-    const type        = document.getElementById('proposalType').value;
+    const type = document.getElementById('proposalType').value;
     const description = document.getElementById('description').value;
 
     if (!description) { showToast('Please enter a description', 'error'); return; }
@@ -361,7 +555,7 @@ async function createProposal() {
         let tx;
 
         if (type === 'transfer') {
-            const amount    = document.getElementById('amount').value;
+            const amount = document.getElementById('amount').value;
             const recipient = document.getElementById('recipient').value;
             if (!amount || parseFloat(amount) <= 0) {
                 showToast('Please enter a valid amount', 'error'); return;
@@ -378,10 +572,14 @@ async function createProposal() {
 
         } else {
             // Strategy proposal (lending or arbitrage)
-            const protocol  = document.getElementById('strategyProtocol').value;
-            const tokenIn   = document.getElementById('strategyTokenIn').value;
-            const amountIn  = document.getElementById('strategyAmountIn').value || "0";
-            const calldata  = document.getElementById('strategyCalldata').value || "0x";
+            const protocol = document.getElementById('strategyProtocol').value;
+            const tokenIn = document.getElementById('strategyTokenIn').value;
+            const amountIn = document.getElementById('strategyAmountIn').value || "0";
+            const calldata = document.getElementById('strategyCalldata').value || "0x";
+
+            // Look for a hidden ethValue input, default to 0
+            const ethValueInput = document.getElementById('strategyEthValue');
+            const ethValue = ethValueInput ? ethValueInput.value : "0";
 
             if (!ethers.utils.isAddress(protocol)) {
                 showToast('Please enter a valid protocol address', 'error'); return;
@@ -396,7 +594,7 @@ async function createProposal() {
 
             tx = await contract.proposeStrategy(
                 protocol,
-                0,           // ethValue (ERC20 strategy → 0)
+                ethValue,    // Pass the actual ethValue instead of 0
                 calldata,
                 description,
                 sType,
@@ -411,12 +609,15 @@ async function createProposal() {
 
         // Reset form
         document.getElementById('recipient').value = '';
-        document.getElementById('amount').value    = '';
+        document.getElementById('amount').value = '';
         document.getElementById('description').value = '';
         document.getElementById('strategyProtocol').value = '';
-        document.getElementById('strategyTokenIn').value  = '';
+        document.getElementById('strategyTokenIn').value = '';
         document.getElementById('strategyAmountIn').value = '';
         document.getElementById('strategyCalldata').value = '';
+
+        const ethValueInput = document.getElementById('strategyEthValue');
+        if (ethValueInput) ethValueInput.value = '0';
 
         await loadDashboardData();
         await loadProposals();
@@ -464,23 +665,23 @@ window.executeProposal = executeProposal;
 // ============================================================
 
 async function loadStrategies() {
-    const lendingEl   = document.getElementById('lendingStrategies');
+    const lendingEl = document.getElementById('lendingStrategies');
     const arbitrageEl = document.getElementById('arbitrageStrategies');
-    lendingEl.innerHTML   = '<p class="strategy-empty">Loading...</p>';
+    lendingEl.innerHTML = '<p class="strategy-empty">Loading...</p>';
     arbitrageEl.innerHTML = '<p class="strategy-empty">Loading...</p>';
 
     try {
-        const res  = await fetch(`${BACKEND_URL}/api/strategies/opportunities`);
+        const res = await fetch(`${BACKEND_URL}/api/strategies/opportunities`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        renderStrategies(lendingEl,   data.lending,   'No lending opportunities found right now.');
+        renderStrategies(lendingEl, data.lending, 'No lending opportunities found right now.');
         renderStrategies(arbitrageEl, data.arbitrage, 'No arbitrage opportunities found right now.');
 
     } catch (e) {
         const msg = `<p class="strategy-empty">Could not reach the strategy backend.<br>
                      <small>Make sure <code>uvicorn main:app --reload --port 8000</code> is running.</small></p>`;
-        lendingEl.innerHTML   = msg;
+        lendingEl.innerHTML = msg;
         arbitrageEl.innerHTML = msg;
     }
 }
@@ -495,8 +696,8 @@ function renderStrategies(container, strategies, emptyMsg) {
 }
 
 function createStrategyCard(s) {
-    const now      = Math.floor(Date.now() / 1000);
-    const expired  = s.expires_at && s.expires_at < now;
+    const now = Math.floor(Date.now() / 1000);
+    const expired = s.expires_at && s.expires_at < now;
     const expLabel = expired
         ? '<span class="strategy-expires strategy-expired">Expired</span>'
         : s.expires_at
@@ -530,11 +731,11 @@ function createStrategyCard(s) {
         <div class="strategy-footer">
             ${expLabel}
             ${isAdmin && !expired
-                ? `<button class="btn btn-primary btn-small"
+            ? `<button class="btn btn-primary btn-small"
                        onclick='createProposalFromStrategy(${JSON.stringify(s)})'>
                        Create Proposal
                    </button>`
-                : '<span></span>'}
+            : '<span></span>'}
         </div>
     `;
     return card;
@@ -555,10 +756,52 @@ function createProposalFromStrategy(strategy) {
 
     // Fill strategy fields
     document.getElementById('strategyProtocol').value = strategy.protocol_address;
-    document.getElementById('strategyTokenIn').value  = strategy.token_in;
+    document.getElementById('strategyTokenIn').value = strategy.token_in;
     document.getElementById('strategyAmountIn').value = strategy.amount_suggestion_wei;
     document.getElementById('strategyCalldata').value = strategy.calldata;
-    document.getElementById('description').value      = strategy.description;
+    document.getElementById('description').value = strategy.description;
+
+    // Build human-readable helper texts
+    let amountInHelper = document.getElementById('strategyAmountInHelper');
+    if (!amountInHelper) {
+        amountInHelper = document.createElement('small');
+        amountInHelper.id = 'strategyAmountInHelper';
+        amountInHelper.style.display = 'block';
+        amountInHelper.style.color = '#10b981'; // Green readable text
+        amountInHelper.style.marginTop = '4px';
+        document.getElementById('strategyAmountIn').parentNode.appendChild(amountInHelper);
+    }
+
+    // Guess decimals based on token_in address (not robust but works for our testnet)
+    const isUSDC = strategy.token_in && strategy.token_in.toLowerCase() === "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
+    const decimals = isUSDC ? 6 : (strategy.token_in === ethers.constants.AddressZero ? 18 : 18); // Default 18
+    const readableAmount = ethers.utils.formatUnits(strategy.amount_suggestion_wei || "0", decimals);
+
+    amountInHelper.innerText = `≈ ${readableAmount} tokens`;
+
+    // Handle ethValue
+    let ethValueInput = document.getElementById('strategyEthValue');
+    if (!ethValueInput) {
+        ethValueInput = document.createElement('input');
+        ethValueInput.type = 'hidden';
+        ethValueInput.id = 'strategyEthValue';
+        document.getElementById('strategyFields').appendChild(ethValueInput);
+    }
+    ethValueInput.value = strategy.eth_value || "0";
+
+    // readable helper for ethValue too
+    let ethValueHelper = document.getElementById('strategyEthHelper');
+    if (!ethValueHelper) {
+        ethValueHelper = document.createElement('small');
+        ethValueHelper.id = 'strategyEthHelper';
+        ethValueHelper.style.display = 'block';
+        ethValueHelper.style.color = '#38bdf8'; // Blue readable text
+        ethValueHelper.style.marginTop = '4px';
+        document.getElementById('strategyProtocol').parentNode.appendChild(ethValueHelper);
+    }
+    ethValueHelper.innerText = strategy.eth_value && strategy.eth_value !== "0"
+        ? `+ Sending ${ethers.utils.formatEther(strategy.eth_value)} natively attached ETH`
+        : '';
 
     showToast('Strategy pre-loaded into the form. Review and submit.', 'info');
 }
@@ -594,9 +837,10 @@ function setupContractEvents() {
         showToast(`Received ${ethers.utils.formatEther(amount)} ETH from ${sender.slice(0, 8)}...`, 'success');
     });
 
-    contract.on('StrategyExecuted', (txId, strategyType, protocol) => {
+    contract.on('StrategyExecuted', async (txId, strategyType, protocol) => {
         const names = { 0: 'None', 1: 'Lending', 2: 'Arbitrage' };
         showToast(`Strategy executed: ${names[strategyType] || strategyType} on ${protocol.slice(0, 8)}...`, 'success');
+        await loadPortfolio();
     });
 }
 

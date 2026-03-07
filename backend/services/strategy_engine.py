@@ -48,6 +48,21 @@ AAVE_SUPPLY_ABI = [
     }
 ]
 
+# Aave V3 WETH Gateway ABI
+AAVE_WETH_GATEWAY_DEPOSIT_ABI = [
+    {
+        "inputs": [
+            {"name": "pool",        "type": "address"},
+            {"name": "onBehalfOf",  "type": "address"},
+            {"name": "referralCode","type": "uint16"},
+        ],
+        "name": "depositETH",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function",
+    }
+]
+
 # Default suggestion: 1000 USDC (6 decimals)
 _DEFAULT_USDC_AMOUNT = 1_000 * 10 ** 6
 
@@ -65,39 +80,60 @@ class StrategyEngine:
 
     def get_lending_opportunities(self) -> list[StrategyRecommendation]:
         snapshot = self.prices.get_price_snapshot()
-        best     = self.lending.get_best_lending_opportunity("USDC")
-        apy      = best["apy"]
+        recs = []
 
-        if apy < config.LENDING_MIN_APY_PCT:
-            return []
+        for asset_symbol in config.TOKENS.keys():
+            best = self.lending.get_best_lending_opportunity(asset_symbol)
+            if not best:
+                continue
 
-        if "Compound" in best["protocol"]:
-            calldata   = self._encode_compound_supply(best["asset"], _DEFAULT_USDC_AMOUNT)
-            risk_score = 2
-        else:
-            calldata   = self._encode_aave_supply(best["asset"], _DEFAULT_USDC_AMOUNT)
-            risk_score = 3
+            apy = best.get("apy", 0)
+            if apy < config.LENDING_MIN_APY_PCT:
+                continue
 
-        rec = StrategyRecommendation(
-            id=f"lending-{best['protocol'].lower().replace(' ', '-')}-{int(time.time())}",
-            strategy_type=StrategyType.LENDING,
-            protocol_name=best["protocol"],
-            protocol_address=Web3.to_checksum_address(best["protocol_address"]),
-            description=(
-                f"Supply {_DEFAULT_USDC_AMOUNT // 10**6} USDC to {best['protocol']} "
-                f"at {apy:.2f}% APY"
-            ),
-            expected_return_pct=apy,
-            risk_score=risk_score,
-            token_in=Web3.to_checksum_address(best["asset"]),
-            token_in_symbol=best["asset_symbol"],
-            amount_suggestion_wei=str(_DEFAULT_USDC_AMOUNT),
-            calldata=calldata,
-            eth_value="0",
-            price_snapshot=snapshot,
-            expires_at=int(time.time()) + 300,
-        )
-        return [rec]
+            token_meta = config.TOKENS.get(asset_symbol, {})
+            amount_suggestion = token_meta.get("default_amount", 0)
+            decimals = token_meta.get("decimals", 18)
+            
+            if not amount_suggestion:
+                continue
+
+            if "Compound" in best["protocol"]:
+                calldata   = self._encode_compound_supply(best["asset"], amount_suggestion)
+                risk_score = 2
+            elif "WETH Gateway" in best["protocol"]:
+                calldata   = self._encode_aave_weth_gateway_deposit(config.AAVE_V3_POOL)
+                risk_score = 3
+            else:
+                calldata   = self._encode_aave_supply(best["asset"], amount_suggestion)
+                risk_score = 3
+                
+            amount_readable = amount_suggestion / (10 ** decimals)
+            eth_value = str(amount_suggestion) if asset_symbol == "ETH" else "0"
+            token_in = "0x0000000000000000000000000000000000000000" if asset_symbol == "ETH" else Web3.to_checksum_address(best["asset"])
+
+            rec = StrategyRecommendation(
+                id=f"lending-{best['protocol'].lower().replace(' ', '-')}-{asset_symbol.lower()}-{int(time.time())}",
+                strategy_type=StrategyType.LENDING,
+                protocol_name=best["protocol"],
+                protocol_address=Web3.to_checksum_address(best["protocol_address"]),
+                description=(
+                    f"Supply {amount_readable:g} {asset_symbol} to {best['protocol']} "
+                    f"at {apy:.2f}% APY"
+                ),
+                expected_return_pct=apy,
+                risk_score=risk_score,
+                token_in=token_in,
+                token_in_symbol=best["asset_symbol"],
+                amount_suggestion_wei=str(amount_suggestion),
+                calldata=calldata,
+                eth_value=eth_value,
+                price_snapshot=snapshot,
+                expires_at=int(time.time()) + 300,
+            )
+            recs.append(rec)
+            
+        return recs
 
     # -----------------------------------------------------------------------
     # Multi-pair arbitrage scanner
@@ -293,7 +329,7 @@ class StrategyEngine:
             abi=COMET_SUPPLY_ABI,
         )
         return comet.encode_abi(
-            "supply",
+            abi_element_identifier="supply",
             args=[Web3.to_checksum_address(asset), amount],
         )
 
@@ -308,6 +344,21 @@ class StrategyEngine:
             else "0x0000000000000000000000000000000000000001"
         )
         return pool.encode_abi(
-            "supply",
+            abi_element_identifier="supply",
             args=[Web3.to_checksum_address(asset), amount, on_behalf_of, 0],
+        )
+
+    def _encode_aave_weth_gateway_deposit(self, pool_address: str) -> str:
+        gateway = self.w3.eth.contract(
+            address=Web3.to_checksum_address(config.AAVE_V3_WETH_GATEWAY),
+            abi=AAVE_WETH_GATEWAY_DEPOSIT_ABI,
+        )
+        on_behalf_of = (
+            Web3.to_checksum_address(config.CONTRACT_ADDRESS)
+            if config.CONTRACT_ADDRESS
+            else "0x0000000000000000000000000000000000000001"
+        )
+        return gateway.encode_abi(
+            abi_element_identifier="depositETH",
+            args=[Web3.to_checksum_address(pool_address), on_behalf_of, 0],
         )
