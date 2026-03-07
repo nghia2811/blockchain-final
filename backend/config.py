@@ -60,13 +60,13 @@ _TOKEN_DEFAULTS: dict = {
         "address":        "ETH",
         "decimals":       18,
         "chainlink_usd":  os.getenv("CHAINLINK_ETH_USD",  "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"),
-        "default_amount": int(0.1 * 10 ** 18),
+        "default_amount": int(10 * 10 ** 18),
     },
     "WETH": {
         "address":        os.getenv("WETH", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         "decimals":       18,
         "chainlink_usd":  os.getenv("CHAINLINK_ETH_USD",  "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"),
-        "default_amount": int(0.1 * 10 ** 18),
+        "default_amount": int(10 * 10 ** 18),
     },
     "WBTC": {
         "address":        os.getenv("WBTC", "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"),

@@ -155,7 +155,7 @@ function setupEventListeners() {
     // Live update helper text when typing in "Amount In (wei)" field
     const amtInput = document.getElementById('strategyAmountIn');
     if (amtInput) {
-        amtInput.addEventListener('input', (e) => {
+        amtInput.addEventListener('input', async (e) => {
             const val = e.target.value.trim();
             let helper = document.getElementById('strategyAmountInHelper');
             if (!helper) {
@@ -181,6 +181,38 @@ function setupEventListeners() {
                 helper.innerText = `≈ ${readableAmount} tokens`;
 
                 const proposalType = document.getElementById('proposalType').value;
+
+                if (proposalType === 'arbitrage') {
+                    // Re-encode arbitrage swap calldata via backend
+                    const strategyFields = document.getElementById('strategyFields');
+                    const tokenOut = strategyFields.dataset.tokenOut || '';
+                    const feeTier = parseInt(strategyFields.dataset.feeTier || '3000');
+                    if (tokenInAddress && tokenOut) {
+                        try {
+                            const res = await fetch(`${BACKEND_URL}/api/calldata/encode`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    strategy_type: 'arbitrage',
+                                    protocol_address: document.getElementById('strategyProtocol').value,
+                                    token_in: tokenInAddress,
+                                    token_out: tokenOut,
+                                    amount_in_wei: val,
+                                    min_amount_out_wei: '0',
+                                    fee_tier: feeTier
+                                })
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                document.getElementById('strategyCalldata').value = data.calldata;
+                            }
+                        } catch (err) {
+                            console.warn('Could not re-encode arbitrage calldata:', err);
+                        }
+                    }
+                    return;
+                }
+
                 if (proposalType !== 'lending') return;
 
                 // If this is a WETH Gateway native ETH deposit, sync ethValue and rewrite Calldata
@@ -879,6 +911,11 @@ function createProposalFromStrategy(strategy) {
     document.getElementById('strategyAmountIn').value = strategy.amount_suggestion_wei;
     document.getElementById('strategyCalldata').value = strategy.calldata;
     document.getElementById('description').value = strategy.description;
+
+    // Store arbitrage metadata for calldata re-encoding on amount change
+    const strategyFields = document.getElementById('strategyFields');
+    strategyFields.dataset.tokenOut = strategy.token_out || '';
+    strategyFields.dataset.feeTier = strategy.fee_tier || '3000';
 
     // Build human-readable helper texts
     let amountInHelper = document.getElementById('strategyAmountInHelper');

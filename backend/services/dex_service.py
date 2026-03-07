@@ -78,7 +78,7 @@ class DexService:
         amount_out_min_wei: int,
         recipient: str,
         fee: int = 3000,
-        deadline_offset: int = 300,
+        deadline_offset: int = 3600,
     ) -> str:
         """
         Encode Uniswap V3 exactInputSingle calldata.

@@ -300,6 +300,9 @@ class StrategyEngine:
                 amount_suggestion_wei=str(amount_in),
                 calldata=calldata,
                 eth_value="0",
+                token_out=Web3.to_checksum_address(token_out_addr),
+                token_out_symbol=token_out_sym,
+                fee_tier=fee,
                 price_snapshot=snapshot,
                 expires_at=int(time.time()) + 60,   # arbitrage window: 1 min
             ))

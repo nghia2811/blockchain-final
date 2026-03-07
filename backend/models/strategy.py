@@ -53,6 +53,9 @@ class StrategyRecommendation(BaseModel):
     amount_suggestion_wei: str         # suggested input amount as integer string (wei)
     calldata: str                      # 0x-prefixed hex calldata for the contract call
     eth_value: str                     # ETH to forward as integer string (wei); "0" for ERC20
+    token_out: str = ""                # checksum token address for swap output (arbitrage)
+    token_out_symbol: str = ""         # e.g. "LINK", "USDC"
+    fee_tier: int = 0                  # Uniswap pool fee tier (e.g. 500, 3000)
     price_snapshot: PriceSnapshot
     expires_at: int                    # unix timestamp after which recs should be refreshed
 
