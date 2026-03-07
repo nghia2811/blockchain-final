@@ -16,8 +16,15 @@ contract MultisigWalletWithStrategies {
     // Enums
     // -------------------------------------------------------------------------
 
-    enum ProposalType { TRANSFER, STRATEGY }
-    enum StrategyType { NONE, LENDING, ARBITRAGE }
+    enum ProposalType {
+        TRANSFER,
+        STRATEGY
+    }
+    enum StrategyType {
+        NONE,
+        LENDING,
+        ARBITRAGE
+    }
 
     // -------------------------------------------------------------------------
     // Events
@@ -40,7 +47,11 @@ contract MultisigWalletWithStrategies {
         address tokenIn,
         uint256 amountIn
     );
-    event StrategyExecuted(uint256 indexed txId, StrategyType strategyType, address indexed protocol);
+    event StrategyExecuted(
+        uint256 indexed txId,
+        StrategyType strategyType,
+        address indexed protocol
+    );
     event ProtocolApproved(address indexed protocol, string name);
     event ProtocolRevoked(address indexed protocol);
     event AdminAdded(address indexed admin);
@@ -59,8 +70,8 @@ contract MultisigWalletWithStrategies {
         uint256 approvalCount;
         ProposalType proposalType;
         StrategyType strategyType;
-        address tokenIn;    // ERC20 token used as input; address(0) = ETH
-        uint256 amountIn;   // amount of tokenIn (for approve-before-call)
+        address tokenIn; // ERC20 token used as input; address(0) = ETH
+        uint256 amountIn; // amount of tokenIn (for approve-before-call)
     }
 
     // -------------------------------------------------------------------------
@@ -126,7 +137,10 @@ contract MultisigWalletWithStrategies {
         address _btcUsdFeed
     ) {
         require(_admins.length > 0, "At least one admin required");
-        require(_threshold > 0 && _threshold <= _admins.length, "Invalid threshold");
+        require(
+            _threshold > 0 && _threshold <= _admins.length,
+            "Invalid threshold"
+        );
 
         for (uint256 i = 0; i < _admins.length; i++) {
             address admin = _admins[i];
@@ -139,8 +153,10 @@ contract MultisigWalletWithStrategies {
 
         threshold = _threshold;
 
-        if (_ethUsdFeed != address(0)) ethUsdFeed = AggregatorV3Interface(_ethUsdFeed);
-        if (_btcUsdFeed != address(0)) btcUsdFeed = AggregatorV3Interface(_btcUsdFeed);
+        if (_ethUsdFeed != address(0))
+            ethUsdFeed = AggregatorV3Interface(_ethUsdFeed);
+        if (_btcUsdFeed != address(0))
+            btcUsdFeed = AggregatorV3Interface(_btcUsdFeed);
     }
 
     // -------------------------------------------------------------------------
@@ -164,7 +180,10 @@ contract MultisigWalletWithStrategies {
      * @param _protocol Contract address of the protocol
      * @param _name     Human-readable name (e.g. "Uniswap V3 Router")
      */
-    function approveProtocol(address _protocol, string calldata _name) external onlyAdmin {
+    function approveProtocol(
+        address _protocol,
+        string calldata _name
+    ) external onlyAdmin {
         require(_protocol != address(0), "Invalid protocol address");
         require(!approvedProtocols[_protocol], "Already approved");
         approvedProtocols[_protocol] = true;
@@ -181,7 +200,9 @@ contract MultisigWalletWithStrategies {
         // Remove from list (order not preserved)
         for (uint256 i = 0; i < approvedProtocolList.length; i++) {
             if (approvedProtocolList[i] == _protocol) {
-                approvedProtocolList[i] = approvedProtocolList[approvedProtocolList.length - 1];
+                approvedProtocolList[i] = approvedProtocolList[
+                    approvedProtocolList.length - 1
+                ];
                 approvedProtocolList.pop();
                 break;
             }
@@ -209,18 +230,20 @@ contract MultisigWalletWithStrategies {
         require(_to != address(0), "Invalid recipient");
 
         uint256 txId = proposals.length;
-        proposals.push(Proposal({
-            to: _to,
-            value: _value,
-            data: _data,
-            description: _description,
-            executed: false,
-            approvalCount: 0,
-            proposalType: ProposalType.TRANSFER,
-            strategyType: StrategyType.NONE,
-            tokenIn: address(0),
-            amountIn: 0
-        }));
+        proposals.push(
+            Proposal({
+                to: _to,
+                value: _value,
+                data: _data,
+                description: _description,
+                executed: false,
+                approvalCount: 0,
+                proposalType: ProposalType.TRANSFER,
+                strategyType: StrategyType.NONE,
+                tokenIn: address(0),
+                amountIn: 0
+            })
+        );
 
         emit ProposalCreated(txId, msg.sender, _to, _value, _description);
         return txId;
@@ -251,25 +274,42 @@ contract MultisigWalletWithStrategies {
         uint256 _amountIn
     ) external onlyAdmin returns (uint256) {
         require(_protocol != address(0), "Invalid protocol");
-        require(_strategyType != StrategyType.NONE, "Must specify strategy type");
+        require(
+            _strategyType != StrategyType.NONE,
+            "Must specify strategy type"
+        );
         require(approvedProtocols[_protocol], "Protocol not in whitelist");
 
         uint256 txId = proposals.length;
-        proposals.push(Proposal({
-            to: _protocol,
-            value: _ethValue,
-            data: _calldata,
-            description: _description,
-            executed: false,
-            approvalCount: 0,
-            proposalType: ProposalType.STRATEGY,
-            strategyType: _strategyType,
-            tokenIn: _tokenIn,
-            amountIn: _amountIn
-        }));
+        proposals.push(
+            Proposal({
+                to: _protocol,
+                value: _ethValue,
+                data: _calldata,
+                description: _description,
+                executed: false,
+                approvalCount: 0,
+                proposalType: ProposalType.STRATEGY,
+                strategyType: _strategyType,
+                tokenIn: _tokenIn,
+                amountIn: _amountIn
+            })
+        );
 
-        emit ProposalCreated(txId, msg.sender, _protocol, _ethValue, _description);
-        emit StrategyProposed(txId, _strategyType, _protocol, _tokenIn, _amountIn);
+        emit ProposalCreated(
+            txId,
+            msg.sender,
+            _protocol,
+            _ethValue,
+            _description
+        );
+        emit StrategyProposed(
+            txId,
+            _strategyType,
+            _protocol,
+            _tokenIn,
+            _amountIn
+        );
         return txId;
     }
 
@@ -277,24 +317,17 @@ contract MultisigWalletWithStrategies {
     // Approve & Execute
     // -------------------------------------------------------------------------
 
-    function approve(uint256 _txId)
-        external
-        onlyAdmin
-        txExists(_txId)
-        notExecuted(_txId)
-        notApproved(_txId)
-    {
+    function approve(
+        uint256 _txId
+    ) external onlyAdmin txExists(_txId) notExecuted(_txId) notApproved(_txId) {
         hasApproved[_txId][msg.sender] = true;
         proposals[_txId].approvalCount++;
         emit Approved(msg.sender, _txId);
     }
 
-    function execute(uint256 _txId)
-        external
-        onlyAdmin
-        txExists(_txId)
-        notExecuted(_txId)
-    {
+    function execute(
+        uint256 _txId
+    ) external onlyAdmin txExists(_txId) notExecuted(_txId) {
         Proposal storage proposal = proposals[_txId];
 
         // Count caller's approval if not yet given
@@ -322,20 +355,33 @@ contract MultisigWalletWithStrategies {
     // -------------------------------------------------------------------------
 
     function _executeTransfer(Proposal storage proposal) internal {
-        (bool success,) = proposal.to.call{value: proposal.value}(proposal.data);
+        (bool success, ) = proposal.to.call{value: proposal.value}(
+            proposal.data
+        );
         require(success, "Transfer execution failed");
     }
 
-    function _executeStrategy(uint256 _txId, Proposal storage proposal) internal {
+    function _executeStrategy(
+        uint256 _txId,
+        Proposal storage proposal
+    ) internal {
         require(approvedProtocols[proposal.to], "Protocol not approved");
 
-        // Approve ERC20 allowance if needed
+        // Approve ERC20 allowance if needed (safe approve pattern)
         if (proposal.tokenIn != address(0) && proposal.amountIn > 0) {
-            IERC20(proposal.tokenIn).approve(proposal.to, proposal.amountIn);
+            // Reset allowance to 0 first (required by some tokens like USDC)
+            IERC20(proposal.tokenIn).approve(proposal.to, 0);
+            // Then set the desired allowance and verify success
+            bool approved = IERC20(proposal.tokenIn).approve(
+                proposal.to,
+                proposal.amountIn
+            );
+            require(approved, "ERC20 approve failed");
         }
 
-        (bool success, bytes memory returnData) =
-            proposal.to.call{value: proposal.value}(proposal.data);
+        (bool success, bytes memory returnData) = proposal.to.call{
+            value: proposal.value
+        }(proposal.data);
 
         if (!success) {
             // Bubble up revert reason
@@ -359,17 +405,31 @@ contract MultisigWalletWithStrategies {
      * @return price      Price with feed decimals (usually 8)
      * @return updatedAt  Timestamp of the last update
      */
-    function getEthUsdPrice() external view returns (int256 price, uint256 updatedAt) {
-        require(address(ethUsdFeed) != address(0), "ETH/USD feed not configured");
-        (, price,, updatedAt,) = ethUsdFeed.latestRoundData();
+    function getEthUsdPrice()
+        external
+        view
+        returns (int256 price, uint256 updatedAt)
+    {
+        require(
+            address(ethUsdFeed) != address(0),
+            "ETH/USD feed not configured"
+        );
+        (, price, , updatedAt, ) = ethUsdFeed.latestRoundData();
     }
 
     /**
      * @notice Read the latest BTC/USD price from Chainlink
      */
-    function getBtcUsdPrice() external view returns (int256 price, uint256 updatedAt) {
-        require(address(btcUsdFeed) != address(0), "BTC/USD feed not configured");
-        (, price,, updatedAt,) = btcUsdFeed.latestRoundData();
+    function getBtcUsdPrice()
+        external
+        view
+        returns (int256 price, uint256 updatedAt)
+    {
+        require(
+            address(btcUsdFeed) != address(0),
+            "BTC/USD feed not configured"
+        );
+        (, price, , updatedAt, ) = btcUsdFeed.latestRoundData();
     }
 
     /**
@@ -383,25 +443,47 @@ contract MultisigWalletWithStrategies {
     // View Helpers
     // -------------------------------------------------------------------------
 
-    function getAdminCount() external view returns (uint256) { return admins.length; }
-    function getAdmins() external view returns (address[] memory) { return admins; }
-    function getProposalCount() external view returns (uint256) { return proposals.length; }
+    function getAdminCount() external view returns (uint256) {
+        return admins.length;
+    }
+    function getAdmins() external view returns (address[] memory) {
+        return admins;
+    }
+    function getProposalCount() external view returns (uint256) {
+        return proposals.length;
+    }
 
-    function getProposal(uint256 _txId) external view returns (
-        address to,
-        uint256 value,
-        bytes memory data,
-        string memory description,
-        bool executed,
-        uint256 approvalCount,
-        ProposalType proposalType,
-        StrategyType strategyType,
-        address tokenIn,
-        uint256 amountIn
-    ) {
+    function getProposal(
+        uint256 _txId
+    )
+        external
+        view
+        returns (
+            address to,
+            uint256 value,
+            bytes memory data,
+            string memory description,
+            bool executed,
+            uint256 approvalCount,
+            ProposalType proposalType,
+            StrategyType strategyType,
+            address tokenIn,
+            uint256 amountIn
+        )
+    {
         Proposal storage p = proposals[_txId];
-        return (p.to, p.value, p.data, p.description, p.executed,
-                p.approvalCount, p.proposalType, p.strategyType, p.tokenIn, p.amountIn);
+        return (
+            p.to,
+            p.value,
+            p.data,
+            p.description,
+            p.executed,
+            p.approvalCount,
+            p.proposalType,
+            p.strategyType,
+            p.tokenIn,
+            p.amountIn
+        );
     }
 
     function canExecute(uint256 _txId) external view returns (bool) {
@@ -410,7 +492,9 @@ contract MultisigWalletWithStrategies {
         return !p.executed && p.approvalCount >= threshold;
     }
 
-    function getBalance() external view returns (uint256) { return address(this).balance; }
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
 
     function getTokenBalance(address token) external view returns (uint256) {
         return IERC20(token).balanceOf(address(this));

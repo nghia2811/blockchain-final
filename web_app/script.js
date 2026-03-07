@@ -3,7 +3,7 @@
 // ============================================================
 
 // ---- Contract Configuration (update after forge deploy) ----
-const CONTRACT_ADDRESS = "0x195FA537B17734Bb4fDEE405146dAb5F9Dca72be";
+const CONTRACT_ADDRESS = "0xDC7EBaEDe38f3420161Dc8742A29C02e84f89b2c";
 const BACKEND_URL = "http://localhost:8000";
 
 // ---- Contract ABI for MultisigWalletWithStrategies ----
@@ -72,7 +72,7 @@ const PORTFOLIO_ASSETS = [
         }
     },
     {
-        symbol: "aUSDC", name: "Aave V3 USDC", address: "0x98c23e9d8f34fea023834e462b2dcee2bed9ba25", decimals: 6,
+        symbol: "aUSDC", name: "Aave V3 USDC", address: "0x98c23e9d8f34fefb1b7bd6a91b7ff122f4e16f5c", decimals: 6,
         withdrawCall: {
             protocol: "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2", // AAVE_POOL
             tokenIn: "0x0000000000000000000000000000000000000000",
@@ -180,6 +180,9 @@ function setupEventListeners() {
                 const readableAmount = ethers.utils.formatUnits(val, decimals);
                 helper.innerText = `≈ ${readableAmount} tokens`;
 
+                const proposalType = document.getElementById('proposalType').value;
+                if (proposalType !== 'lending') return;
+
                 // If this is a WETH Gateway native ETH deposit, sync ethValue and rewrite Calldata
                 const protocolInput = document.getElementById('strategyProtocol').value;
                 if (protocolInput && protocolInput.toLowerCase() === "0xd01607c3c5ecaba394d8be377a08590149325722") { // WETH_GATEWAY
@@ -198,6 +201,28 @@ function setupEventListeners() {
                     ]);
                     const newCalldata = iface.encodeFunctionData("depositETH", [
                         "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+                        contract.address,
+                        0
+                    ]);
+                    document.getElementById('strategyCalldata').value = newCalldata;
+                } else if (protocolInput && protocolInput.toLowerCase() === "0xc3d688b66703497daa19211eedff47f25384cdc3") { // COMPOUND_V3
+                    // Rewrite Compound V3 calldata: supply(address asset, uint256 amount)
+                    const iface = new ethers.utils.Interface([
+                        "function supply(address asset, uint256 amount)"
+                    ]);
+                    const newCalldata = iface.encodeFunctionData("supply", [
+                        tokenInAddress,
+                        val
+                    ]);
+                    document.getElementById('strategyCalldata').value = newCalldata;
+                } else if (protocolInput && protocolInput.toLowerCase() === "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2") { // AAVE_V3
+                    // Rewrite Aave V3 calldata: supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)
+                    const iface = new ethers.utils.Interface([
+                        "function supply(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)"
+                    ]);
+                    const newCalldata = iface.encodeFunctionData("supply", [
+                        tokenInAddress,
+                        val,
                         contract.address,
                         0
                     ]);
@@ -898,6 +923,13 @@ function createProposalFromStrategy(strategy) {
         : '';
 
     showToast('Strategy pre-loaded into the form. Review and submit.', 'info');
+
+    // Automatically trigger input event to rewrite calldata with correct contract.address
+    const amtInput = document.getElementById('strategyAmountIn');
+    if (amtInput) {
+        const event = new Event('input', { bubbles: true });
+        amtInput.dispatchEvent(event);
+    }
 }
 
 window.createProposalFromStrategy = createProposalFromStrategy;
