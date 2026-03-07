@@ -422,7 +422,7 @@ async function prepareWithdraw(symbol, balanceWeiStr) {
 
         // Mock a strategy object to load in the form
         const dummyStrategy = {
-            strategy_type: 'lending',
+            strategy_type: 'withdraw',
             protocol_address: asset.withdrawCall.protocol,
             token_in: asset.withdrawCall.tokenIn,
             amount_suggestion_wei: ethers.constants.MaxUint256.toString(), // Approve Max if needed
@@ -584,7 +584,8 @@ async function createProposal() {
             if (!ethers.utils.isAddress(protocol)) {
                 showToast('Please enter a valid protocol address', 'error'); return;
             }
-            const sType = type === 'lending'
+            // Map "withdraw" -> LENDING (1) for the smart contract StrategyType Enum
+            const sType = (type === 'lending' || type === 'withdraw')
                 ? StrategyType.LENDING
                 : StrategyType.ARBITRAGE;
 
@@ -751,7 +752,10 @@ function createProposalFromStrategy(strategy) {
 
     // Set proposal type
     const typeSelect = document.getElementById('proposalType');
-    typeSelect.value = strategy.strategy_type === 'lending' ? 'lending' : 'arbitrage';
+    if (strategy.strategy_type === 'lending') typeSelect.value = 'lending';
+    else if (strategy.strategy_type === 'withdraw') typeSelect.value = 'withdraw';
+    else typeSelect.value = 'arbitrage';
+
     handleProposalTypeChange();
 
     // Fill strategy fields
